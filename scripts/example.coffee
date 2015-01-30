@@ -48,10 +48,10 @@ module.exports = (robot) ->
   #     return
   #   msg.send "#{answer}, but what is the question?"
   #
-  # robot.respond /you are a little slow/, (msg) ->
-  #   setTimeout () ->
-  #     msg.send "Who you calling 'slow'?"
-  #   , 60 * 1000
+    robot.respond /you are a little slow/, (msg) ->
+      setTimeout () ->
+        msg.send "Who you calling 'slow'?"
+        , 60 * 1000
   #
   # annoyIntervalId = null
   #
