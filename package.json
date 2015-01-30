@@ -22,7 +22,9 @@
     "hubot-outofcontext": "1.0.1",
     "hubot-soon": "1.0.0",
     "hubot-darts": "1.0.1",
-    "hubot-auth": "latest"
+    "hubot-auth": "latest",
+    "hubot-ambush": "latest",
+    "hubot-dance": "latest"
   },
   "engines": {
     "node": "0.10.x"

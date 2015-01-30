@@ -13,5 +13,7 @@
   "hubot-outofcontext",
   "hubot-soon",
   "hubot-darts",
-  "hubot-auth"
+  "hubot-auth",
+  "hubot-ambush",
+  "hubot-dance"
 ]
