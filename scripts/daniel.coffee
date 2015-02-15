@@ -14,9 +14,10 @@ module.exports = (robot) ->
     robot.respond /deep/i, (msg) ->
         msg.http(process.env.HUBOT_DEEP_THOUGHT_URL)
             .get() (error, response, body) ->
-                data = JSON.parse body
-                msg.send data.thought
+                data = JSON.parse(body)
+                msg.send decodeURI(data.thought.replace(/&quot;/g,'"'))
 
     robot.respond /room/i, (msg) ->
-        msg.send robot.messageRoom()
+        room = msg.message.room
+        msg.send("The room is #{room}")
 
