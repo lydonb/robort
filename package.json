@@ -24,6 +24,10 @@
     "hubot-darts": "1.0.1",
     "hubot-auth": "latest",
     "hubot-ambush": "latest",
+    "underscore": "latest",
+    "underscore.string": "latest",
+    "soupselect": "latest",
+    "htmlparser": "latest",
     "hubot-dance": "latest"
   },
   "engines": {
