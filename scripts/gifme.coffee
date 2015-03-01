@@ -1,17 +1,17 @@
-  # Description:
-  #   gifme command returns a preset gif according to a keyword
-  #
-  # Configuration:
-  #   None
-  #
-  # Commands:
-  #   robort gifme all
-  #   robort gifme add keyword url
-  #   robort gifme keyword
-  #   robort gifme keyword alternateIndex
-  #
-  # Author:
-  #   mjknowles
+# Description:
+#   gifme command returns a preset gif according to a keyword
+#
+# Configuration:
+#   None
+#
+# Commands:
+#   robort gifme all
+#   robort gifme add <keyword> <url>
+#   robort gifme <keyword>
+#   robort gifme <keyword> <alternateIndex>
+#
+# Author:
+#   mjknowles
 
   gifMeUrl = "http://gifatme.azurewebsites.net/api/gifentries/"
 
@@ -43,6 +43,7 @@
       Keyword: keyword
     })
     robot.http(gifMeUrl)
+      .header("content-type","application/json")
       .post(data) (err, res, body) ->
         # error checking code here
         if err
