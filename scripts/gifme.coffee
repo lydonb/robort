@@ -18,7 +18,7 @@
   # Display the gifme api to interested boneheads - i mean users.
   gifMeApi = (cb) ->
     cb "Prefix all of these with 'robort' then your gifme command:" +
-    "\nSave a gif for a keyword (url begin with http:// and end with .gif): gifme add highfive http://i.imgur.com/wJUHejF.gif" +
+    "\nSave a gif for a keyword (url must begin with http:// and end with .gif): gifme add highfive <my highfive url here>" +
     "\nRetrieve a random gif for a keyword: gifme highfive" +
     "\nRetrieve a specific gif for a keyword (ordered in ascending order of upload): gifme highfive 2" +
     "\nRetrieve all of your gifs and keyords (not in general or random rooms): gifme all"
@@ -46,8 +46,8 @@
       .header("content-type","application/json")
       .post(data) (err, res, body) ->
         # error checking code here
-        if err
-          cb "Error: #{err}"
+        if res.statusCode isnt 200
+          cb "Error: #{body}"
           return
         cb "Gif upload successful for #{keyword}"
 
@@ -64,7 +64,7 @@
       .get() (err, res, body) ->
         # error checking code here
         if res.statusCode isnt 200
-          cb "Request didn't come back HTTP 200 :("
+          cb "Error: #{body}"
           return
         data = JSON.parse(body)
         cb data.GifEntry.Url
@@ -86,8 +86,11 @@
         keyword = msg.match[4]
         if firstWord is "add"
           url = msg.match[6]
-          gifMeAdd robot, userName, keyword, url, (response) ->
-            msg.send response
+          if url?
+            gifMeAdd robot, userName, keyword, url, (response) ->
+              msg.send response
+          else
+            msg.send "Invalid URL. Start with http:// and end with .gif"
         else
           # get a gif entry
           index = msg.match[6]
