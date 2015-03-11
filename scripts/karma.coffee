@@ -113,13 +113,13 @@ module.exports = (robot) ->
   robot.respond /karma( best)?$/i, (msg) ->
     verbiage = ["The Best"]
     for item, rank in karma.top()
-      verbiage.push "#{rank + 1}. #{item.name} - #{item.karma}"
+      verbiage.push "#{rank + 1}. #{item.name}: #{item.karma}"
     msg.send verbiage.join("\n")
 
   robot.respond /karma worst$/i, (msg) ->
     verbiage = ["The Worst"]
     for item, rank in karma.bottom()
-      verbiage.push "#{rank + 1}. #{item.name} - #{item.karma}"
+      verbiage.push "#{rank + 1}. #{item.name}: #{item.karma}"
     msg.send verbiage.join("\n")
 
   robot.respond /karma (\S+[^-\s])$/i, (msg) ->
