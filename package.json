@@ -27,8 +27,7 @@
     "underscore": "latest",
     "underscore.string": "latest",
     "soupselect": "latest",
-    "htmlparser": "latest",
-    "hubot-dance": "latest"
+    "htmlparser": "latest"
   },
   "engines": {
     "node": "0.10.x"
