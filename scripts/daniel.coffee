@@ -24,8 +24,8 @@ module.exports = (robot) ->
         room = msg.message.room
         msg.send("The room is #{room}")
 
-    robot.hear /tired|too hard|to hard|upset|bored/i, (msg) ->
-        msg.send "Panzy"
+    #robot.hear /tired|too hard|to hard|upset|bored/i, (msg) ->
+    #    msg.send "Panzy"
 
     robot.hear /^\".+\"$/i, (msg) ->
         api=process.env.HUBOT_MUSIXMATCHAPI
