@@ -24,11 +24,12 @@ class Karma
     @cache = {}
 
     @increment_responses = [
-      "+1!", "gained a level!", "is on the rise!", "leveled up!"
+      "+1!", "killin it!", "is en fuego!", "leveled up!"
     ]
 
     @decrement_responses = [
-      "took a hit! Ouch.", "took a dive.", "lost a life.", "lost a level."
+      "took a hit! Ouch.", "got punked.", "lost some street cred.",
+      "lost a level.", "- ya burnt"
     ]
 
     @robot.brain.on 'loaded', =>
@@ -59,7 +60,8 @@ class Karma
     @self_denied_responses = [
       "Hey everyone! #{name} is a narcissist!",
       "I might just allow that next time, but no.",
-      "I can't do that #{name}."
+      "I can't do that #{name}.",
+      "Shut it down, #{name}"
     ]
 
   get: (thing) ->
