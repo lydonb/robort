@@ -79,9 +79,7 @@
         gifMeApi (api) ->
           msg.send api
       else if firstWord is "all"
-        gifMeAll robot, userName, room, (gifs) ->
-          for gif in gifs
-            msg.send "#{gif.Keyword} #{gif.AlternateIndex}: #{gif.Url}"
+        msg.send "Please visit: http://gifatme.azurewebsites.net/"
       else
         if firstWord is "copy"
           otherUser = msg.match[4]
