@@ -22,6 +22,8 @@ class Karma
 
   constructor: (@robot) ->
     @cache = {}
+    @allowances = {}
+    @karma_allowance = 10
 
     @increment_responses = [
       "+1!", "killin it!", "is en fuego!", "leveled up!"
@@ -35,20 +37,27 @@ class Karma
     @robot.brain.on 'loaded', =>
       if @robot.brain.data.karma
         @cache = @robot.brain.data.karma
+      if @robot.brain.data.karmaAllowances
+        @allowances = @robot.brain.data.karmaAllowances
+      @karma_allowance ?= process.env.KARMA_ALLOWANCE
 
   kill: (thing) ->
     delete @cache[thing]
     @robot.brain.data.karma = @cache
 
-  increment: (thing) ->
+  increment: (thing, name) ->
+    @allowances[name] -= 1;
     @cache[thing] ?= 0
     @cache[thing] += 1
     @robot.brain.data.karma = @cache
+    @robot.brain.data.karmaAllowances = @allowances
 
-  decrement: (thing) ->
+  decrement: (thing, name) ->
+    @allowances[name] -= 1;
     @cache[thing] ?= 0
     @cache[thing] -= 1
     @robot.brain.data.karma = @cache
+    @robot.brain.data.karmaAllowances = @allowances
 
   incrementResponse: ->
      @increment_responses[Math.floor(Math.random() * @increment_responses.length)]
@@ -56,6 +65,14 @@ class Karma
   decrementResponse: ->
      @decrement_responses[Math.floor(Math.random() * @decrement_responses.length)]
 
+  getAllowance: (name) ->
+    if not (@allowances[name]?) then  @allowances[name] = @karma_allowance
+    return @allowances[name]
+
+  clearAllowances: ->
+    @allowances = {}
+    @robot.brain.data.karmaAllowances = {}
+    
   selfDeniedResponses: (name) ->
     @self_denied_responses = [
       "Hey everyone! #{name} is a narcissist!",
@@ -83,24 +100,30 @@ class Karma
     sorted.slice(-n).reverse()
 
 module.exports = (robot) ->
-  robot.logger.warning "karma.coffee has merged with plusplus.coffee and moved from hubot-scripts to its own package. Remove it from your hubot-scripts.json and see https://github.com/ajacksified/hubot-plusplus for upgrade instructions"
-
   karma = new Karma robot
+  cronJob = require('cron').CronJob
+  new cronJob('0 01 01 * * *', karma.clearAllowances, null, true, 'America/Chicago', karma)
   allow_self = process.env.KARMA_ALLOW_SELF or "true"
 
   robot.hear /(\S+[^+:\s])[: ]*\+\+(\s|$)/, (msg) ->
     subject = msg.match[1].toLowerCase()
-    if allow_self is true or msg.message.user.name.toLowerCase() != subject
-      karma.increment subject
+    name = msg.message.user.name.toLowerCase()
+    if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject)
+      karma.increment subject, name
       msg.send "#{subject} #{karma.incrementResponse()} (Karma: #{karma.get(subject)})"
+    else if (karma.getAllowance(name) == 0)
+      msg.send "#{name} isn't allowed to karma any more today!"
     else
       msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
 
   robot.hear /(\S+[^-:\s])[: ]*--(\s|$)/, (msg) ->
     subject = msg.match[1].toLowerCase()
-    if allow_self is true or msg.message.user.name.toLowerCase() != subject
-      karma.decrement subject
+    name = msg.message.user.name.toLowerCase()
+    if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject)
+      karma.decrement subject, name
       msg.send "#{subject} #{karma.decrementResponse()} (Karma: #{karma.get(subject)})"
+    else if (karma.getAllowance(name) == 0)
+      msg.send "#{name} isn't allowed to karma any more today!"
     else
       msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
 
@@ -111,6 +134,14 @@ module.exports = (robot) ->
       msg.send "#{subject} has had its karma scattered to the winds."
     else
       msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
+
+  robot.respond /karma give allowance$/i, (msg) ->
+    karma.allowances = {}
+    msg.send "All right... everyone can play again..."
+
+  robot.respond /karma show allowance$/i, (msg) ->
+    for item, value of karma.allowances
+      msg.send "#{item}: #{value}"
 
   robot.respond /karma( best)?$/i, (msg) ->
     verbiage = ["The Best"]
