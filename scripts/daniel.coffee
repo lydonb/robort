@@ -27,7 +27,7 @@ module.exports = (robot) ->
     #robot.hear /tired|too hard|to hard|upset|bored/i, (msg) ->
     #    msg.send "Panzy"
 
-    robot.hear /^\".+\"$/i, (msg) ->
+    robot.hear /^\""".+\"""$/i, (msg) ->
         api=process.env.HUBOT_MUSIXMATCHAPI
         mylyrics=msg.message.text.replace(/&quot;/g,'')
         msg.http("http://api.musixmatch.com/ws/1.1/track.search?q_lyrics=#{mylyrics}&apikey=#{api}&s_track_rating=DESC&page_size=1")
