@@ -54,6 +54,7 @@ class Karma
 
   decrement: (thing, name) ->
     @allowances[name] -= 1;
+    @cache[name] -= 2
     @cache[thing] ?= 0
     @cache[thing] -= 1
     @robot.brain.data.karma = @cache
@@ -79,6 +80,13 @@ class Karma
       "I might just allow that next time, but no.",
       "I can't do that #{name}.",
       "Shut it down, #{name}"
+    ]
+    
+  shortOnKarmaResponses: (name) ->
+    @short_on_karma_responses = [
+      "#{name}: Get your own karma first, you slacker!",
+      "To be the man, you've gotta beat the man, #{name}.",
+      "You need more vespene gas, #{name}."
     ]
 
   get: (thing) ->
@@ -119,11 +127,13 @@ module.exports = (robot) ->
   robot.hear /(\S+[^-:\s])[: ]*--(\s|$)/, (msg) ->
     subject = msg.match[1].toLowerCase()
     name = msg.message.user.name.toLowerCase()
-    if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject)
+    if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject) and (karma.get(name) >= 2)
       karma.decrement subject, name
       msg.send "#{subject} #{karma.decrementResponse()} (Karma: #{karma.get(subject)})"
     else if (karma.getAllowance(name) == 0)
       msg.send "#{name} isn't allowed to karma any more today!"
+    else if (karma.get(name) < 2)
+      msg.send msg.random karma.shortOnKarmaResponses(msg.message.user.name)
     else
       msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
 
