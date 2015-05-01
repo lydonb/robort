@@ -29,11 +29,6 @@ class Karma
       "+1!", "killin it!", "is en fuego!", "leveled up!"
     ]
 
-    @decrement_responses = [
-      "took a hit! Ouch.", "got punked.", "lost some street cred.",
-      "lost a level.", "- ya burnt"
-    ]
-
     @robot.brain.on 'loaded', =>
       if @robot.brain.data.karma
         @cache = @robot.brain.data.karma
@@ -63,9 +58,6 @@ class Karma
   incrementResponse: ->
      @increment_responses[Math.floor(Math.random() * @increment_responses.length)]
 
-  decrementResponse: ->
-     @decrement_responses[Math.floor(Math.random() * @decrement_responses.length)]
-
   getAllowance: (name) ->
     if not (@allowances[name]?) then  @allowances[name] = @karma_allowance
     return @allowances[name]
@@ -87,6 +79,16 @@ class Karma
       "#{name}: Get your own karma first, you slacker!",
       "To be the man, you've gotta beat the man, #{name}.",
       "You need more vespene gas, #{name}."
+    ]
+    
+  decrementResponses: (name, subject, nKarma, sKarma) ->
+    @decrement_responses = [
+      "#{subject}(#{sKarma}) took a hit from #{name}(#{nKarma})! Ouch.", 
+      "#{subject}(#{sKarma}) got punked by #{name}(#{nKarma}).",
+      "#{name}(#{nKarma}) took out a hit on #{subject}(#{sKarma}).",  
+      "#{name}(#{nKarma}) stole street cred from #{subject}(#{sKarma})",
+      "#{subject}(#{sKarma}) lost a level because of #{name}(#{nKarma}).", 
+      "#{subject}(#{sKarma}) - ya burnt. #{name}(#{nKarma}) - ya burnter"
     ]
 
   get: (thing) ->
@@ -129,7 +131,7 @@ module.exports = (robot) ->
     name = msg.message.user.name.toLowerCase()
     if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject) and (karma.get(name) >= 2)
       karma.decrement subject, name
-      msg.send "#{subject} #{karma.decrementResponse()} (Karma: #{karma.get(subject)})"
+      msg.send msg.random karma.decrementResponses(msg.message.user.name, msg.message.user.subject, karma.get(name), karma.get(subject))
     else if (karma.getAllowance(name) == 0)
       msg.send "#{name} isn't allowed to karma any more today!"
     else if (karma.get(name) < 2)
