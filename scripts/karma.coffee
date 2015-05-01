@@ -131,7 +131,7 @@ module.exports = (robot) ->
     name = msg.message.user.name.toLowerCase()
     if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject) and (karma.get(name) >= 2)
       karma.decrement subject, name
-      msg.send msg.random karma.decrementResponses(msg.message.user.name, msg.message.user.subject, karma.get(name), karma.get(subject))
+      msg.send msg.random karma.decrementResponses(msg.message.user.name, subject, karma.get(name), karma.get(subject))
     else if (karma.getAllowance(name) == 0)
       msg.send "#{name} isn't allowed to karma any more today!"
     else if (karma.get(name) < 2)
