@@ -86,7 +86,7 @@ class Karma
       "#{subject}(#{sKarma}) took a hit from #{name}(#{nKarma})! Ouch.",
       "#{subject}(#{sKarma}) got punked by #{name}(#{nKarma}).",
       "#{name}(#{nKarma}) took out a hit on #{subject}(#{sKarma}).",
-      "#{name}(#{nKarma}) stole street cred from #{subject}(#{sKarma})",
+      "#{name}(#{nKarma}) sabotaged #{subject}(#{sKarma})",
       "#{subject}(#{sKarma}) lost a level because of #{name}(#{nKarma}).",
       "#{subject}(#{sKarma}) - ya burnt. #{name}(#{nKarma}) - ya burnter"
     ]
