@@ -111,6 +111,7 @@ class Karma
 
 module.exports = (robot) ->
   karma = new Karma robot
+  robot.karma = karma
   cronJob = require('cron').CronJob
   new cronJob('0 01 01 * * *', karma.clearAllowances, null, true, 'America/Chicago', karma)
   allow_self = process.env.KARMA_ALLOW_SELF or "true"
