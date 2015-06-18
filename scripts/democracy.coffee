@@ -115,20 +115,6 @@ module.exports = (robot) ->
         r.send "already not ignoring #{toIgnore}"
     return
 
-  robot.enter (r) ->
-    userId = r.message.user.id
-    return if ignoring[userId]
-
-    for q, qId in questions
-      answered = do ->
-        for answer in q.answers
-          for v, i in answer.votedBy
-            if v is userId
-              return true
-        return false
-      if not answered
-        r.send "#{userId}: unvoted question, please see !question #{qId + 1}"
-
   robot.brain.on 'loaded', ->
     questions = robot.brain.data.questions
     if not questions
