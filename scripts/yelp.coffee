@@ -74,7 +74,7 @@ lunchMe = (msg, query, random = true) ->
   #msg.send("Looking for #{query} around #{location}...")
   yelp.search category_filter: "restaurants", term: query, radius_filter: radius, sort: sort, limit: 20, location: location, (error, data) ->
     if error != null
-      return msg.send "There was an error searching for #{query}. Maybe try #{default_suggestion}?"
+      return msg.send "There was an error searching for #{query}. Maybe try #{default_suggestion}? ERROR:#{error}"
 
     if data.total == 0
       return msg.send "I couldn't find any #{query} for you. Maybe try #{default_suggestion}?"

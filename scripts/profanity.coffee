@@ -71,4 +71,4 @@ module.exports = (robot) ->
     regex = new RegExp('(?:^|\\s)(' + words.join('|') + ')(?:\\s|\\.|\\?|!|$)', 'ig');
 
     robot.hear regex, (msg) ->
-      punish robot, msg, 'swearjar', 'robort'
+      punish robot, msg, 'swearjar', 'nestle'

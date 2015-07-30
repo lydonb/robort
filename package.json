@@ -20,6 +20,7 @@
     "hubot-maps": "0.0.1",
     "hubot-outofcontext": "1.0.1",
     "hubot-pugme": "^0.1.0",
+    "hubot-plusplus": "latest",
     "hubot-redis-brain": "0.0.2",
     "hubot-rules": "^0.1.0",
     "hubot-scripts": "^2.5.16",
@@ -29,6 +30,7 @@
     "hubot-youtube": "^0.1.2",
     "soupselect": "latest",
     "time": "^0.11.1",
+    "request": "latest",
     "underscore": "latest",
     "underscore.string": "latest"
   },
