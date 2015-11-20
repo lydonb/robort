@@ -41,10 +41,10 @@ module.exports = (robot) ->
                    msg.send "Were you quoting #{track.track_name} by #{track.artist_name}? #{thisresponse}"
                    if track.track_spotify_id?.length
                       msg.send "http://open.spotify.com/track/#{track.track_spotify_id}"
-    robot.hear /^(#)?.*/i, (msg) ->
-        if msg.message.text.charAt(0) == '#'
-           msg.send "Saving for future NLP processing"
-        msg.http(process.env.HUBOT_NLP_URI).headers('Content-Type': 'application/json').post(JSON.stringify(msg.message)) 
+    # robot.hear /^(#)?.*/i, (msg) ->
+    #     if msg.message.text.charAt(0) == '#'
+    #        msg.send "Saving for future NLP processing"
+    #     msg.http(process.env.HUBOT_NLP_URI).headers('Content-Type': 'application/json').post(JSON.stringify(msg.message))
 
     robot.respond /conspiracy me\b/i, (msg) ->
        msg.send conspire()
