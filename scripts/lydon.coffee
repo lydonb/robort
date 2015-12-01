@@ -16,5 +16,3 @@ module.exports = (robot) ->
     msg.send "No Spoilers!!"
   robot.hear /(your?|need|to) help/i, (msg) ->
     msg.send("Help will always be given at CTS to those who ask for it.")
-  robot.hear /chris/i, (msg) ->
-    msg.send(":cpeck:")
