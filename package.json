@@ -19,6 +19,7 @@
     "hubot-heroku-keepalive": "0.0.4",
     "hubot-maps": "0.0.1",
     "hubot-outofcontext": "1.0.1",
+    "hubot-plusplus": "latest",
     "hubot-redis-brain": "0.0.2",
     "hubot-rules": "^0.1.0",
     "hubot-scripts": "^2.5.16",
