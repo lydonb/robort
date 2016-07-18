@@ -38,6 +38,7 @@ listQuotes = (data, user) ->
 
 findUser = (robot, msg, name, callback) ->
   users = robot.brain.usersForFuzzyName(name.trim())
+  msg.send(name.trim())
   if users.length is 1
     user = users[0]
     callback(user)
@@ -62,7 +63,7 @@ module.exports = (robot) ->
       removed = removeQuote(robot.brain.data.oocQuotes, user, msg.match[2])
       msg.send if removed then "Quote has been removed from historical records." else "Sorry Dave, we were unable to locate that message."
 
-  robot.respond /outofcontext|ooc list (.*?):?/i, (msg) ->
+  robot.respond /outofcontext|ooc list (.*?)/i, (msg) ->
     findUser robot, msg, msg.match[1], (user) ->
       listQuotes(robot.brain.data.oocQuotes, user) 
   
