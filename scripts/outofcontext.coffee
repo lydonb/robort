@@ -9,11 +9,9 @@
 #   None
 #
 # Commands:
-#   hubot outofcontext <user name>: <message> - add a quote for a user
-#   hubot ooc <user name>: <message> - add a quote for a user
-#   hubot outofcontext rm <user name>: <message> - remove a quote for a user
-#   hubot ooc rm <user name>: <message> - remove a quote for a user
-#   hubot outofcontext list <user name>: - list messages for a user
+#   hubot outofcontext|ooc <user name>: <message> - add a quote for a user
+#   hubot outofcontext|ooc rm <user name>: <message> - remove a quote for a user
+#   hubot outofcontext|ooc list <user name>: - list messages for a user
 #
 # Author:
 #   robotmay
@@ -30,13 +28,13 @@ removeQuote = (data, user, message) ->
   else
     return false
 
-#listQuotes = (data, user) ->
-#  quotes = data[user.name] or= []
-#  if quotes.length > 0
-#    msg.send "#user has said..."
-#    msg.send "#{id} - \"#{quote}\"" for quote, id in robot.brain.data.oocQuotes[user.name]
-#  else
-#    msg.send "#user hasn't said anything noteworthy."
+listQuotes = (data, user) ->
+  quotes = data[user.name] or= []
+  if quotes.length > 0
+    msg.send "#user has said..."
+    msg.send "#{id} - \"#{quote}\"" for quote, id in robot.brain.data.oocQuotes[user.name]
+  else
+    msg.send "#user hasn't said anything noteworthy."
 
 findUser = (robot, msg, name, callback) ->
   users = robot.brain.usersForFuzzyName(name.trim())
@@ -65,10 +63,8 @@ module.exports = (robot) ->
       msg.send if removed then "Quote has been removed from historical records." else "Sorry Dave, we were unable to locate that message."
 
   robot.respond /outofcontext|ooc list (.*?):?/i, (msg) ->
-    msg.send(user)
-    msg.send(msg.match[1])
- #   findUser robot, msg, msg.match[1], (user) ->
- #     listQuotes(robot.brain.data.oocQuotes, user) 
+    findUser robot, msg, msg.match[1], (user) ->
+      listQuotes(robot.brain.data.oocQuotes, user) 
   
   robot.hear /./i, (msg) ->
     return unless robot.brain.data.oocQuotes?
