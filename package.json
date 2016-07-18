@@ -5,7 +5,7 @@
   "author": "Lydon Bergin <lbergin@askcts.com>",
   "description": "Lydon's virtual personal assitant",
   "dependencies": {
-    "conspire" : "latest",
+    "conspire": "latest",
     "cron": "^1.0.9",
     "htmlparser": "latest",
     "hubot": "^2.11.0",
@@ -16,6 +16,7 @@
     "hubot-google-images": "^0.1.2",
     "hubot-google-translate": "^0.1.0",
     "hubot-help": "^0.1.1",
+    "hubot-help-private": "^0.1.3",
     "hubot-heroku-keepalive": "0.0.4",
     "hubot-maps": "0.0.1",
     "hubot-outofcontext": "1.0.1",
