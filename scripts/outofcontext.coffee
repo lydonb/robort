@@ -65,6 +65,8 @@ module.exports = (robot) ->
       msg.send if removed then "Quote has been removed from historical records." else "Sorry Dave, we were unable to locate that message."
 
   robot.respond /outofcontext|ooc list (.*?):?/i, (msg) ->
+    msg.send(user)
+    msg.send(msg.match[1])
     findUser robot, msg, msg.match[1], (user) ->
       listQuotes(robot.brain.data.oocQuotes, user) 
   
