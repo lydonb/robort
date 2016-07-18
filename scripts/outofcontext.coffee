@@ -28,8 +28,7 @@ removeQuote = (data, user, message) ->
   else
     return false
 
-listQuotes = (data, user) ->
-  msg.send "Function hit"
+listQuotes = (data, msg, user) ->
   quotes = data[user.name] or= []
   if quotes.length > 0
     msg.send "#user has said..."
@@ -66,7 +65,7 @@ module.exports = (robot) ->
   robot.respond /outofcontext|ooc list (.*?):/i, (msg) ->
     msg.send "List hit"
     findUser robot, msg, msg.match[1], (user) ->
-      listQuotes(robot.brain.data.oocQuotes, user) 
+      listQuotes(robot.brain.data.oocQuotes, msg, user) 
   
   robot.hear /./i, (msg) ->
     return unless robot.brain.data.oocQuotes?
