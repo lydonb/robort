@@ -32,9 +32,9 @@ listQuotes = (data, msg, user) ->
   quotes = data[user.name] or= []
   if quotes.length > 0
     msg.send "#{user.name} has said..."
-    msg.send "#{id} - \"#{quote}\"" for quote, id in quotes
+    msg.send "\"#{quote}\"" for quote in quotes
   else
-    msg.send "#user hasn't said anything noteworthy."
+    msg.send "#{user.name} hasn't said anything of consequence."
 
 findUser = (robot, msg, name, callback) ->
   users = robot.brain.usersForFuzzyName(name.trim())
@@ -63,7 +63,6 @@ module.exports = (robot) ->
       msg.send if removed then "Quote has been removed from historical records." else "Sorry Dave, we were unable to locate that message."
 
   robot.respond /outofcontext|ooc list (.*?):/i, (msg) ->
-    msg.send "List hit"
     findUser robot, msg, msg.match[1], (user) ->
       listQuotes(robot.brain.data.oocQuotes, msg, user) 
   
