@@ -20,6 +20,12 @@ module.exports = (robot) ->
     questions.push { text: "#{q}", answers: [] }
     robot.brain.save()
     r.send "added questionnaire ##{questions.length}"
+  
+  getUserNames = (userIds) ->
+    userNames = []
+    for id in userIds 
+      userNames.push if robot.brain.data.users[id]? then robot.brain.data.users[id].name else "Unknown"
+    return userNames
 
   getQuestion = (r, qId, callback) ->
     if qId < questions.length
@@ -40,7 +46,7 @@ module.exports = (robot) ->
       r.send "#{qId + 1}: #{q.text}"
       for answer, aId in q.answers
         r.send "  #{aId + 1}: #{answer.text} - " +
-               "#{answer.votedBy.length} (#{answer.votedBy.join ', '})"
+               "#{answer.votedBy.length} (#{getUserNames(answer.votedBy).join ', '})"
 
   robot.respond /questions/, (r) ->
     if not questions.length
