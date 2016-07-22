@@ -18,15 +18,13 @@
 #   mickey
 
 module.exports = (robot) ->
-
   robot.respond /mtgme (.*)/i, (msg) ->
   	# Get the card
   	cardname = msg.match[1]
   	
   	# Check for apostrophe
   	hasApostrophe = cardname.indexOf('\'') >= 0
-  	if hasApostrophe
-  		msg.send """https://api.magicthegathering.io/v1/cards?name=#{cardname}"""
+  	if hasApostrophe 
   		robot.http("""https://api.magicthegathering.io/v1/cards?name=#{cardname}""")
 	  		.get() (err, res, body) -> 
 	  			json = JSON.parse(body)
@@ -49,29 +47,32 @@ module.exports = (robot) ->
 	  			# If there is an exact match for a card name
 	  			else if (sameArray[cardname] == numCards)					
 		  			try
-		  				msg.send card.imageUrl for card in json.cards when card.set isnt 'pPRE' && card.set isnt 'pMGD'
+		  				msg.send card.imageUrl for card in json.cards when card.set isnt 'pPRE' && card.set isnt 'pMGD' 
 		  			catch error
 		  				msg.send "Card #{cardname} not found."
 		  		else
 		  			msg.send "This shouldn't happen..."
+
   	# Else no apostrophe
   	else
   		cardname = '\"' + cardname + '\"'
-  		msg.send """https://api.magicthegathering.io/v1/cards?name=#{cardname}"""
+  		#msg.send """https://api.magicthegathering.io/v1/cards?name=#{cardname}"""
   		robot.http("""https://api.magicthegathering.io/v1/cards?name=#{cardname}""")
 	  		.get() (err, res, body) -> 
 	  			json = JSON.parse(body)
 	  			numCards = Object.keys(json.cards).length
-	  			msg.send numCards
-	  			# Check if there isn't an exact match
-	  			try
-	  				msg.send card.imageUrl for card in json.cards when card.set isnt 'pPRE' || card.set isnt 'pMGD'
-	  			catch error
-	  				msg.send "Card #{cardname} not found."
-	  				# msg.send "#{imageUrl}"
 
-# What happens if multiple with no apostrophe it will go to exact match
-# What happens for Stasis Snare
+	  			# Check if there isn't an exact match
+	  			if numCards > 0
+	  				# Return first card that has an imageUrl.
+	  				for card in json.cards
+	  					if card.imageUrl? 
+	  						msg.send card.imageUrl
+	  						break
+
+	  			else
+	  				msg.send "Card #{cardname} not found."
+
 
 # Personal notes don't mind me:
 # If there is an apostrophe, don't do exact matching
