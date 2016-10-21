@@ -9,9 +9,9 @@
 #   None
 #
 # Commands:
-#   hubot outofcontext|ooc <user name>: <message> - add a quote for a user
-#   hubot outofcontext|ooc rm <user name>: <message> - remove a quote for a user
-#   hubot outofcontext|ooc list <user name>: - list quotes for a user
+#   hubot ooc add <user name> <message> - add a quote for a user
+#   hubot ooc rm <user name> <message> - remove a quote for a user
+#   hubot ooc list <user name> - list quotes for a user
 #
 # Author:
 #   robotmay
@@ -52,17 +52,17 @@ module.exports = (robot) ->
   robot.brain.on 'loaded', =>
     robot.brain.data.oocQuotes ||= {}
 
-  robot.respond /outofcontext|ooc (?!rm|list )(.*?): (.*)/i, (msg) ->
+  robot.respond /ooc add ([^\s]+) (.*)/i, (msg) ->
     findUser robot, msg, msg.match[1], (user) ->
       appendQuote(robot.brain.data.oocQuotes, user, msg.match[2])
       msg.send "Quote has been stored for future prosperity."
 
-  robot.respond /outofcontext|ooc rm (.*?): (.*)/i, (msg) ->
+  robot.respond /ooc rm ([^\s]+) (.*)/i, (msg) ->
     findUser robot, msg, msg.match[1], (user) ->
       removed = removeQuote(robot.brain.data.oocQuotes, user, msg.match[2])
       msg.send if removed then "Quote has been removed from historical records." else "Sorry Dave, we were unable to locate that message."
   
-  robot.respond /outofcontext|ooc list (.*?):/i, (msg) ->
+  robot.respond /ooc list ([^\s]+)/i, (msg) ->
     findUser robot, msg, msg.match[1], (user) ->
       listQuotes(robot.brain.data.oocQuotes, msg, user)
 
