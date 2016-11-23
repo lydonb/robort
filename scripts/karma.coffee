@@ -151,8 +151,11 @@ module.exports = (robot) ->
       msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
 
   robot.respond /karma give allowance$/i, (msg) ->
-    karma.allowances = {}
-    msg.send "All right... everyone can play again..."
+    if not robot.auth.hasRole(msg.envelope.user,'admin')
+      msg.send "I can't let you do that..."
+    else 
+      karma.allowances = {}
+      msg.send "All right... everyone can play again..."
 
   robot.respond /karma show allowance$/i, (msg) ->
     for item, value of karma.allowances
