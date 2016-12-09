@@ -2,14 +2,11 @@
 #   Track arbitrary achievements purchesed with karma.
 #
 # Dependencies:
-#  karma.coffee
+#   None
 #
 # Commands:
-#   <thing> get <AchievemntName> <KarmaValue> - give <thing> an achivment called <AchievementName>
-#               worth <KarmaValue>. Decrements awarders karma by <KarmaValue>. If <KarmaValue> is
-#               ommitted then it will default to the min value (configurable).
-#   hubot achievements <thing> - Lists the Achievments awared to <Thing> by their karma value.
-#   hubot achievements best - show the top 5 Achievemtns and their owner based on karma value.
+#   <thing> got <AchievemntName> - Gives <thing> an achivment called <AchievementName>
+#   hubot achievements <thing> - Lists the Achievments awared to <Thing>.
 #
 # Author:
 #   Andrew Riedel
