@@ -1,5 +1,5 @@
 # Description:
-#   Track arbitrary achievements purchesed with karma.
+#   Track arbitrary achievements.
 #
 # Dependencies:
 #   None
