@@ -14,68 +14,60 @@
 # Author:
 #   Andrew Riedel
 
-class Achievments
+class Achievements
 
   constructor: (@robot) ->
     @cache = {}
-    @min_cost = 10
 
     @robot.brain.on 'loaded', =>
-      if @robot.brain.data.achievments
-        @cache = @robot.brain.data.achievments
+      if @robot.brain.data.achievements
+        @cache = @robot.brain.data.achievements
 
   kill: (thing) ->
     delete @cache[thing]
-    @robot.brain.data.achievments = @cache
+    @robot.brain.data.achievements = @cache
 
-  award: (thing, name, value = @karma_min_cost, awarder) ->
+  award: (thing, name, awarder) ->
+    today = new Date()
+    dd = today.getDate()
+    mm = today.getMonth()+1
+    yyyy = today.getFullYear()
+    a = {
+          name: name,
+          awarder: awarder,
+          date: mm+'/'+dd+'/'+yyyy
+    }
     @cache[thing] ?= []
-    @cache[thing].push {
-                        name: name,
-                        value: value,
-                        awarder: awarder
-                       }
-    @robot.brain.data.achievments = @cache
+    @cache[thing].push(a)
+    @robot.brain.data.achievements = @cache
 
   get: (thing) ->
     k = if @cache[thing] then @cache[thing] else 0
     return k
 
-  sort: ->
-    s = []
-    for key, val of @cache
-      for key2, val2 of val
-        s.push({ name: key, achivement: val })
-    s.sort (a, b) -> b.achivement.value - a.achievement.value
-
-  top: (n = 5) ->
-    sorted = @sort()
-    sorted.slice(0, n)
-
 module.exports = (robot) ->
-  achievments = new Achivements robot
-  robot.achievments = achievments
+  achievements = new Achievements robot
+  robot.achievements = achievements
 
-  robot.hear /(\S+[^+:\s])( get )("\S+[^+:\s]")(\s?[0-9]+)?(\s|$)/, (msg) ->
-    subject = msg.match[1].toLowerCase()
+  robot.hear /(\S+[^+:\s])( got )("\S+[^+:\s]")(\s|$)/, (msg) ->
+    subject = msg.match[1].toLowerCase().replace /^\s+|\s+$/g, ""
     name = msg.match[3].toLowerCase()
-    value = msg.match[4] ? achievments.min_cost
     awarder = msg.message.user.name.toLowerCase()
-    achievments.award(subject, name, value, awarder)
-    msg.send "#{subject} got #{name} worth #{value}! (Awarded by #{awarder})"
-    #if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject)
-    #  karma.increment subject, name
-    #  msg.send "#{subject} #{karma.incrementResponse()} (Karma: #{karma.get(subject)})"
-    #else if (karma.getAllowance(name) == 0)
-    #  msg.send "#{name} isn't allowed to karma any more today!"
-    #else
-    #  msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
+    achievements.award(subject, name, awarder)
+    msg.send "#{subject} got #{name}! (Awarded by #{awarder})"
 
-  robot.respond /([a|A]chievments)( \S+[^+:\s])?, (msg) ->
+  robot.respond /([a|A]chievements)( \S+[^+:\s])?/, (msg) ->
     if msg.match[2]?
-      subject = msg.match[2].toLowerCase()
-      achives = achievements.get(subject)
-      if achives != 0
-        for item, rank in achives
-          verbiage.push "#{item.name} #{item.value} #{item.awarder}"
-        msg.send verbiage.join("\n")
+      subject = msg.match[2].toLowerCase().replace /^\s+|\s+$/g, ""
+      a = achievements.get(subject)
+      if not a?
+        msg.send "#{subject} doesn't have any achievements."
+      if a.length == 1
+        msg.send "#{subject} has #{a.length} achievement:"
+      if a.length > 1
+        msg.send "#{subject} has #{a.length} achievements:"
+      verbiage = ""
+      if a != 0
+        for item in a
+          verbiage += "#{item.name} awarded by #{item.awarder} on #{item.date}. \n"
+        msg.send verbiage
