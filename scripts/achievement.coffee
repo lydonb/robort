@@ -46,9 +46,9 @@ module.exports = (robot) ->
   achievements = new Achievements robot
   robot.achievements = achievements
 
-  robot.hear /(\S+[^+:\s])( got )("\S+[^+:\s]")(\s|$)/, (msg) ->
+  robot.hear /(\S+[^+:\s])( got )(".+")(\s|$)/, (msg) ->
     subject = msg.match[1].toLowerCase().replace /^\s+|\s+$/g, ""
-    name = msg.match[3].toLowerCase()
+    name = msg.match[3]
     awarder = msg.message.user.name.toLowerCase()
     achievements.award(subject, name, awarder)
     msg.send "#{subject} got #{name}! (Awarded by #{awarder})"
