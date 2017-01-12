@@ -46,14 +46,14 @@ module.exports = (robot) ->
   achievements = new Achievements robot
   robot.achievements = achievements
 
-  robot.hear /(\S+[^+:\s])( got )(".+")(\s|$)/, (msg) ->
+  robot.respond /(\S+[^+:\s])( achieve )(\S+[^+:\s])(\s|$)/, (msg) ->
     subject = msg.match[1].toLowerCase().replace /^\s+|\s+$/g, ""
-    name = msg.match[3]
+    name = msg.match[3].toLowerCase()
     awarder = msg.message.user.name.toLowerCase()
     achievements.award(subject, name, awarder)
     msg.send "#{subject} got #{name}! (Awarded by #{awarder})"
 
-  robot.respond /([a|A]chievements)( \S+[^+:\s])?/, (msg) ->
+  robot.respond /((?i)achieved)( \S+[^+:\s])?/, (msg) ->
     if msg.match[2]?
       subject = msg.match[2].toLowerCase().replace /^\s+|\s+$/g, ""
       a = achievements.get(subject)
