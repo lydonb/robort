@@ -19,19 +19,19 @@
 OOC_CHANCE = process.env.OOC_CHANCE or= 200
 
 appendQuote = (data, user, message) ->
-  data[user.name] or= []
-  data[user.name].push message
+  data[user.id] or= []
+  data[user.id].push message
 
 removeQuote = (data, user, message) ->
-  index = data[user.name].indexOf(message)
+  index = data[user.id].indexOf(message)
   if (index != -1)
-    data[user.name].splice(index, 1)
+    data[user.id].splice(index, 1)
     return true
   else
     return false
 
 listQuotes = (data, msg, user) ->
-  quotes = data[user.name] or= []
+  quotes = data[user.id] or= []
   if quotes.length > 0
     msg.send "#{user.name} has said..."
     msg.send "\"#{quote}\"" for quote in quotes
@@ -39,12 +39,9 @@ listQuotes = (data, msg, user) ->
     msg.send "#{user.name} hasn't contributed anything of consequence."
 
 findUser = (robot, msg, name, callback) ->
-  users = robot.brain.usersForFuzzyName(name.trim())
-  if users.length is 1
-    user = users[0]
+  user = robot.brain.userForName(name.trim())
+  if user?
     callback(user)
-  else if users.length > 1
-    msg.send "Too many users like that"
   else
     msg.send "#{name}? Never heard of 'em"
   
@@ -67,7 +64,7 @@ module.exports = (robot) ->
       listQuotes(robot.brain.data.oocQuotes, msg, user)
 
   robot.hear /./i, (msg) ->
-    quotes = robot.brain.data.oocQuotes[msg.message.user.name] or= []
+    quotes = robot.brain.data.oocQuotes[msg.message.user.id] or= []
     return unless quotes.length > 0    
     randomQuote = quotes[Math.floor(Math.random() * quotes.length)]
     if Math.random() * OOC_CHANCE < 1

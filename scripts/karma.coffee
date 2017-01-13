@@ -21,12 +21,15 @@
 class Karma
 
   constructor: (@robot) ->
-    @cache = {}
+    @cache = {
+      users: []
+      , things: []
+    }
     @allowances = {}
     @karma_allowance = 10
 
     @increment_responses = [
-      "+1!", "killin it!", "is en fuego!", "leveled up!"
+      "+1!", "killin' it!", "is en fuego!", "leveled up!"
     ]
 
     @robot.brain.on 'loaded', =>
@@ -37,30 +40,44 @@ class Karma
       @karma_allowance ?= process.env.KARMA_ALLOWANCE
 
   kill: (thing) ->
-    delete @cache[thing]
+    thingObj = @robot.brain.userForName(thing)
+    if thingObj?
+      delete @cache.users[thingObj.id]
+    else
+      delete @cache.things[thing]
     @robot.brain.data.karma = @cache
 
-  increment: (thing, name) ->
-    @allowances[name] -= 1;
-    @cache[thing] ?= 0
-    @cache[thing] += 1
+  increment: (thing, actor) ->
+    @allowances[actor.id] -= 1 if actor.id?
+    thingObj = @robot.brain.userForName(thing)
+    if thingObj?
+      @cache.users[thingObj.id] ?= 0
+      @cache.users[thingObj.id] += 1
+    else
+      @cache.things[thing] ?= 0
+      @cache.things[thing] += 1
     @robot.brain.data.karma = @cache
     @robot.brain.data.karmaAllowances = @allowances
 
-  decrement: (thing, name) ->
-    @allowances[name] -= 1;
-    @cache[name] -= 2
-    @cache[thing] ?= 0
-    @cache[thing] -= 1
+  decrement: (thing, actor) ->
+    @allowances[actor.id] -= 1;
+    @cache.users[actor.id] -= 2
+    thingObj = @robot.brain.userForName(thing)
+    if thingObj?
+      @cache.users[thingObj.id] ?= 0
+      @cache.users[thingObj.id] -= 1
+    else
+      @cache.things[thing] ?= 0
+      @cache.things[thing] -= 1
     @robot.brain.data.karma = @cache
     @robot.brain.data.karmaAllowances = @allowances
 
   incrementResponse: ->
-     @increment_responses[Math.floor(Math.random() * @increment_responses.length)]
+    @increment_responses[Math.floor(Math.random() * @increment_responses.length)]
 
-  getAllowance: (name) ->
-    if not (@allowances[name]?) then  @allowances[name] = @karma_allowance
-    return @allowances[name]
+  getAllowance: (user) ->
+    if not @allowances[user.id]? then @allowances[user.id] = @karma_allowance
+    return @allowances[user.id]
 
   clearAllowances: ->
     @allowances = {}
@@ -78,26 +95,33 @@ class Karma
     @short_on_karma_responses = [
       "#{name}: Get your own karma first, you slacker!",
       "To be the man, you've gotta beat the man, #{name}.",
-      "You need more vespene gas, #{name}."
+      "You require more vespene gas, #{name}."
     ]
 
-  decrementResponses: (name, subject, nKarma, sKarma) ->
+  decrementResponses: (name, thing, nKarma, sKarma) ->
     @decrement_responses = [
-      "#{subject}(#{sKarma}) took a hit from #{name}(#{nKarma})! Ouch.",
-      "#{subject}(#{sKarma}) got punked by #{name}(#{nKarma}).",
-      "#{name}(#{nKarma}) took out a hit on #{subject}(#{sKarma}).",
-      "#{name}(#{nKarma}) sabotaged #{subject}(#{sKarma})",
-      "#{subject}(#{sKarma}) lost a level because of #{name}(#{nKarma}).",
-      "#{subject}(#{sKarma}) - ya burnt. #{name}(#{nKarma}) - ya burnter"
+      "#{thing}(#{sKarma}) took a hit from #{name}(#{nKarma})! Ouch.",
+      "#{thing}(#{sKarma}) got punked by #{name}(#{nKarma}).",
+      "#{name}(#{nKarma}) took out a hit on #{thing}(#{sKarma}).",
+      "#{name}(#{nKarma}) sabotaged #{thing}(#{sKarma}).",
+      "#{thing}(#{sKarma}) lost a level because of #{name}(#{nKarma}).",
+      "#{thing}(#{sKarma}) - ya burnt. #{name}(#{nKarma}) - ya burnter."
     ]
 
   get: (thing) ->
-    k = if @cache[thing] then @cache[thing] else 0
+    thingObj = @robot.brain.userForName(thing)
+    if thingObj?
+        k = if @cache.users[thingObj.id]? then @cache.users[thingObj.id] else 0
+    else
+        k = if @cache.things[thing]? then @cache.things[thing] else 0
     return k
 
   sort: ->
     s = []
-    for key, val of @cache
+    for key, val of @cache.users
+      user = @robot.brain.userForId(key)
+      s.push({ name: user?.name, karma: val })
+    for key, val of @cache.things
       s.push({ name: key, karma: val })
     s.sort (a, b) -> b.karma - a.karma
 
@@ -116,33 +140,33 @@ module.exports = (robot) ->
   new cronJob('0 01 01 * * *', karma.clearAllowances, null, true, 'America/Chicago', karma)
   allow_self = process.env.KARMA_ALLOW_SELF or "true"
 
-  robot.hear /(\S+[^+:\s])[: ]*\+\+(\s|$)/, (msg) ->
-    subject = msg.match[1].toLowerCase()
-    name = msg.message.user.name.toLowerCase()
-    if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject)
-      karma.increment subject, name
+  robot.hear /(\S+[^+:\s][: ]*)\+\+(\s|$)/, (msg) ->
+    subject = msg.match[1].toLowerCase().replace /^@+/, ""
+    user = msg.message.user
+    if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject)
+      karma.increment subject, user
       msg.send "#{subject} #{karma.incrementResponse()} (Karma: #{karma.get(subject)})"
-    else if (karma.getAllowance(name) == 0)
-      msg.send "#{name} isn't allowed to karma any more today!"
+    else if (karma.getAllowance(user) == 0)
+      msg.send "#{user.name} isn't allowed to karma any more today!"
     else
-      msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
+      msg.send msg.random karma.selfDeniedResponses(user.name)
 
-  robot.hear /(\S+[^-:\s])[: ]*--(\s|$)/, (msg) ->
-    subject = msg.match[1].toLowerCase()
-    name = msg.message.user.name.toLowerCase()
-    if (karma.getAllowance(name) > 0) and (allow_self is true or name != subject) and (karma.get(name) >= 2)
-      karma.decrement subject, name
-      msg.send msg.random karma.decrementResponses(msg.message.user.name, subject, karma.get(name), karma.get(subject))
-    else if (karma.getAllowance(name) == 0)
-      msg.send "#{name} isn't allowed to karma any more today!"
-    else if (karma.get(name) < 2)
-      msg.send msg.random karma.shortOnKarmaResponses(msg.message.user.name)
+  robot.hear /(\S+[^-:\s][: ]*)--(\s|$)/, (msg) ->
+    subject = msg.match[1].toLowerCase().replace /^@+/, ""
+    user = msg.message.user
+    if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject) and (karma.get(user.name) >= 2)
+      karma.decrement subject, user
+      msg.send msg.random karma.decrementResponses(user.name, subject, karma.get(user.name), karma.get(subject))
+    else if (karma.getAllowance(user) == 0)
+      msg.send "#{user.name} isn't allowed to karma any more today!"
+    else if (karma.get(user.name) < 2)
+      msg.send msg.random karma.shortOnKarmaResponses(user.name)
     else
-      msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
+      msg.send msg.random karma.selfDeniedResponses(user.name)
 
   robot.respond /karma empty ?(\S+[^-\s])$/i, (msg) ->
-    subject = msg.match[1].toLowerCase()
-    if not robot.auth.hasRole(msg.envelope.user,'admin')
+    subject = msg.match[1].toLowerCase().replace /^@+/, ""
+    if not robot.auth.hasRole(msg.message.user,'admin')
       msg.send "I can't let you do that..."
     else if allow_self is true or msg.message.user.name.toLowerCase() != subject
       karma.kill subject
@@ -151,7 +175,7 @@ module.exports = (robot) ->
       msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
 
   robot.respond /karma give allowance$/i, (msg) ->
-    if not robot.auth.hasRole(msg.envelope.user,'admin')
+    if not robot.auth.hasRole(msg.message.user,'admin')
       msg.send "I can't let you do that..."
     else 
       karma.allowances = {}
@@ -159,21 +183,24 @@ module.exports = (robot) ->
 
   robot.respond /karma show allowance$/i, (msg) ->
     for item, value of karma.allowances
-      msg.send "#{item}: #{value}"
+      user = robot.brain.userForId(item)
+      msg.send "#{user?.name}: #{value}"
 
-  robot.respond /karma( best)?$/i, (msg) ->
-    verbiage = ["The Best"]
-    for item, rank in karma.top()
-      verbiage.push "#{rank + 1}. #{item.name}: #{item.karma}"
-    msg.send verbiage.join("\n")
+  robot.respond /karma best?$/i, (msg) ->
+    if karma.top().length > 0
+      verbiage = ["The Best"]
+      for item, rank in karma.top()
+        verbiage.push "#{rank + 1}. #{item.name}: #{item.karma}"
+      msg.send verbiage.join("\n")
 
   robot.respond /karma worst$/i, (msg) ->
-    verbiage = ["The Worst"]
-    for item, rank in karma.bottom()
-      verbiage.push "#{rank + 1}. #{item.name}: #{item.karma}"
-    msg.send verbiage.join("\n")
+    if karma.bottom().length > 0
+      verbiage = ["The Worst"]
+      for item, rank in karma.bottom()
+        verbiage.push "#{rank + 1}. #{item.name}: #{item.karma}"
+      msg.send verbiage.join("\n")
 
   robot.respond /karma (\S+[^-\s])$/i, (msg) ->
-    match = msg.match[1].toLowerCase()
+    match = msg.match[1].toLowerCase().replace /^@+/, ""
     if match != "best" && match != "worst"
       msg.send "\"#{match}\" has #{karma.get(match)} karma."
