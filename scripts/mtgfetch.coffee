@@ -7,12 +7,12 @@
 # Configuration:
 #   None
 #
-# Commands:
-#	robort mtgme <card>
-#
 # Future ideas:
 #	robort mtgme -t <card>
 #	This only prints the card text, no image. 
+#
+# Commands:
+#	hubot mtgme <card>
 #
 # Author:
 #   mickey
