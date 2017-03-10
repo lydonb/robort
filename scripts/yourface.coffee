@@ -12,29 +12,27 @@
 #   Joe Bott
 
 module.exports = (robot) ->
-	percent         = process.env.HUBOT_YOURFACE_PERCENT or 40
 
-	lastYourFace = {}
-	robot.hear /^([ \w]*)[ ]?(is|was) ([ \w]+)[\.!]?$/, (message) ->
-		lower = message.match[1].toLowerCase()
-		if lower.indexOf("your face") < 0 and lower.indexOf("how") < 0 and lower.indexOf("why") < 0 and lower.indexOf("wtf") < 0 and lower.indexOf("when") < 0 and lower.indexOf("where") < 0
-			yourFace = "Your face " + message.match[2] + " " + message.match[3]
-			lastYourFace[(message.message.user.name + '').toLowerCase()] = yourFace
-			if Math.random() <= (percent / 100.0)
-				setTimeout (->
-					message.send yourFace
-					), 2000
-		return
+  percent = process.env.HUBOT_YOURFACE_PERCENT or 3
 
-	robot.respond /how is (.*'s|my) face\??$/i, (message) ->
-		name = message.match[1].replace("'s", '')
+  lastYourFace = {}
+  robot.hear /^([ \w]*) (is|was) (.+)$/, (message) ->
+    lower = message.match[1].toLowerCase()
+    if lower.indexOf("your face") < 0 and lower.indexOf("how") < 0 and lower.indexOf("why") < 0 and lower.indexOf("wtf") < 0 and lower.indexOf("when") < 0 and lower.indexOf("where") < 0
+      if Math.random() <= (percent / 100.0)
+        yourFace = "Your face " + message.match[2] + " " + message.match[3]
+        lastYourFace[(message.message.user.name + '').toLowerCase()] = yourFace
+        setTimeout (->
+          message.send yourFace
+          ), 2000
+    return
 
-		name = message.message.user.name + '' if message.match[1] == 'my'
-
-		if lastYourFace[name.toLowerCase()]
-			message.send name + ": " + lastYourFace[name.toLowerCase()]
-		else
-			message.send "I don't know how " + name + "'s face is. :("
-	
-		return
+  robot.respond /how is (.*'s|my) face\??$/i, (message) ->
+    name = message.match[1].replace("'s", '')
+    name = message.message.user.name + '' if message.match[1] == 'my'
+    if lastYourFace[name.toLowerCase()]
+      message.send name + ": " + lastYourFace[name.toLowerCase()]
+    else
+      message.send "I don't know how " + name + "'s face is. :("
+    return
 
