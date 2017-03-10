@@ -32,9 +32,11 @@ removeQuote = (data, user, message) ->
 
 listQuotes = (data, msg, user) ->
   quotes = data[user.id] or= []
+  quoteMsg = ""
   if quotes.length > 0
     msg.send "#{user.name} has said..."
-    msg.send "\"#{quote}\"" for quote in quotes
+    quoteMsg += "\"#{quote}\"\n" for quote in quotes
+    msg.send "#{quoteMsg}"
   else
     msg.send "#{user.name} hasn't contributed anything of consequence."
 
