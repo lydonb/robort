@@ -8,8 +8,6 @@
 #   None
 #
 # Commands:
-#   @bot show profanity - Show your profanity score
-#   @bot show profanity <username> - Show the user's profanity score
 #
 # Author:
 #   whitman, mjknowles
