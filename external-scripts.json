@@ -1,13 +1,9 @@
 [
   "hubot-diagnostics",
   "hubot-heroku-keepalive",
-  "hubot-google-translate",
-  "hubot-maps",
   "hubot-redis-brain",
   "hubot-rules",
-  "hubot-youtube",
   "hubot-soon",
   "hubot-darts",
-  "hubot-auth",
-  "hubot-ambush"
+  "hubot-auth"
 ]
