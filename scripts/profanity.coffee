@@ -17,10 +17,9 @@
 
 #karma = require './karma'
 
-punish = (robot, msg, karmaWord, punisher) ->
-    #k = new karma.Karma robot
-    robot.karma.increment karmaWord, punisher
-    msg.send "#{karmaWord} #{robot.karma.incrementResponse()} (Karma: #{robot.karma.get(karmaWord)})"
+punish = (robot, msg, swearJar, punisher, count) ->
+    robot.karma.increment swearJar, punisher for [1..count]
+    msg.send "#{swearJar} #{robot.karma.incrementResponse()} (Karma: #{robot.karma.get(swearJar)})"
 
 module.exports = (robot) ->
     words = [
@@ -47,18 +46,9 @@ module.exports = (robot) ->
         'dicks',
         'fag',
         'fags',
-        'fuck',
-        'fucks',
-        'fucked',
-        'fucker',
-        'fuckers',
-        'fucking',
         'goddamn',
         'hell',
         'horseshit'
-        'motherfucker'
-        'motherfuckers',
-        'motherfucking'
         'piss',
         'shit',
         'tit',
@@ -66,7 +56,7 @@ module.exports = (robot) ->
         'titties',
         'titty'
     ]
-    regex = new RegExp('(?:^|\\s)(' + words.join('|') + ')(?:\\s|\\.|\\?|!|$)', 'ig');
+    regex = new RegExp('\\b(' + words.join('|') + '|\\w*fuck\\w*)\\b', 'ig');
 
     robot.hear regex, (msg) ->
-      punish robot, msg, 'swearjar', 'robort'
+      punish robot, msg, 'swearjar', 'robort', msg.message.text.match(regex).length or= 1
