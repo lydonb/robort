@@ -145,7 +145,7 @@ module.exports = (robot) ->
   new cronJob('0 01 01 * * *', karma.clearAllowances, null, true, 'America/Chicago', karma)
   allow_self = process.env.KARMA_ALLOW_SELF or "true"
 
-  robot.hear /([\w\d\.\-\_]+)\+\+/, (msg) ->
+  robot.hear /([\w\d\.\-\_\:]+)\+\+/, (msg) ->
     subject = msg.match[1].toLowerCase().replace /^@+/, ""
     user = msg.message.user
     if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject)
@@ -156,7 +156,7 @@ module.exports = (robot) ->
     else
       msg.send msg.random karma.selfDeniedResponses(user.name)
 
-  robot.hear /([\w\d\.\-\_]+)--/, (msg) ->
+  robot.hear /([\w\d\.\-\_\:]+)--/, (msg) ->
     subject = msg.match[1].toLowerCase().replace /^@+/, ""
     user = msg.message.user
     if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject) and (karma.get(user.name) >= 2)
@@ -169,7 +169,7 @@ module.exports = (robot) ->
     else
       msg.send msg.random karma.selfDeniedResponses(user.name)
 
-  robot.respond /karma empty ([\w\d\.\-\_]+)$/i, (msg) ->
+  robot.respond /karma empty ([\w\d\.\-\_\:]+)$/i, (msg) ->
     subject = msg.match[1].toLowerCase().replace /^@+/, ""
     if not robot.auth.hasRole(msg.message.user,'admin')
       msg.send "I can't let you do that..."
@@ -214,7 +214,7 @@ module.exports = (robot) ->
     else
       msg.send "Sorry #{user.name}, your fingers are writing checks other parts of you can't cash."
 
-  robot.respond /karma ([\w\d\.\-\_]+)$/i, (msg) ->
+  robot.respond /karma ([\w\d\.\-\_\:]+)$/i, (msg) ->
     match = msg.match[1].toLowerCase().replace /^@+/, ""
     if match != "best" && match != "worst"
       msg.send "\"#{match}\" has #{karma.get(match)} karma."
