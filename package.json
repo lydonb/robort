@@ -5,7 +5,6 @@
   "author": "Lydon Bergin <lbergin@askcts.com>",
   "description": "Lydon's virtual personal assitant",
   "dependencies": {
-    "azure": "latest",
     "conspire": "latest",
     "cron": "^1.0.9",
     "htmlparser": "latest",
