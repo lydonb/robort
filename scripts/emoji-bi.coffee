@@ -1,10 +1,12 @@
 module.exports = (robot) ->
-  azure = require('azure')
-  sb = azure.createServiceBusService(process.env.AZURE_SB_CONN_STR)
+  jackrabbit = require('jackrabbit')
+  rabbit = jackrabbit(process.env.AMQP_CONN_STR)
+  rabbit.default().queue({ name: 'slack' })
+  p = (err) ->
+    if (err)
+      console.log err
   f = (msg) ->
-    sb.sendQueueMessage 'fable', JSON.stringify(msg.message), (err) ->
-      if (err)
-        console.log err
+    rabbit.default().publish JSON.stringify(msg.message), { key: 'slack' }, (err) -> p
   robot.hear /.*/, f
   robot.react f
 
