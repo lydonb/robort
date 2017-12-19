@@ -138,12 +138,21 @@ class Karma
     sorted = @sort()
     sorted.slice(-n).reverse()
 
+  notify: (msg, subject, user, verb) ->
+    msgPlace = switch msg.message.rawMessage.channel._modelName
+      when "DM" then "in a direct message"
+      when "Channel" then "in the channel \"#{msg.message.rawMessage.channel.name}\""
+      when "Group" then "in the private channel \"#{msg.message.rawMessage.channel.name}\""
+      else "by some means of sorcery"
+    return "#{user.name} #{verb} #{subject} (Karma: #{this.get(subject)}) #{msgPlace}"
+
 module.exports = (robot) ->
   karma = new Karma robot
   robot.karma = karma
   cronJob = require('cron').CronJob
   new cronJob('0 01 01 * * *', karma.clearAllowances, null, true, 'America/Chicago', karma)
   allow_self = process.env.KARMA_ALLOW_SELF or "true"
+  notify_channel = process.env.KARMA_NOTIFY_CHANNEL or "karma"
 
   robot.hear /([\w\d\.\-\_\:]+)\+\+/, (msg) ->
     subject = msg.match[1].toLowerCase().replace /^@+/, ""
@@ -151,6 +160,7 @@ module.exports = (robot) ->
     if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject)
       karma.increment subject, user
       msg.send "#{subject} #{karma.incrementResponse()} (Karma: #{karma.get(subject)})"
+      robot.messageRoom(notify_channel, karma.notify(msg, subject, user, "incremented"));
     else if (karma.getAllowance(user) == 0)
       msg.send "#{user.name} isn't allowed to karma any more today!"
     else
@@ -162,6 +172,7 @@ module.exports = (robot) ->
     if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject) and (karma.get(user.name) >= 2)
       karma.decrement subject, user
       msg.send msg.random karma.decrementResponses(user.name, subject, karma.get(user.name), karma.get(subject))
+      robot.messageRoom(notify_channel, karma.notify(msg, subject, user, "decremented"));
     else if (karma.getAllowance(user) == 0)
       msg.send "#{user.name} isn't allowed to karma any more today!"
     else if (karma.get(user.name) < 2)
@@ -176,6 +187,7 @@ module.exports = (robot) ->
     else if allow_self is true or msg.message.user.name.toLowerCase() != subject
       karma.kill subject
       msg.send "#{subject} has had its karma scattered to the winds."
+      robot.messageRoom(notify_channel, karma.notify(msg, subject, user, "killed"));
     else
       msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
 
