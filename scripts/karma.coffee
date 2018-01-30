@@ -26,18 +26,17 @@ class Karma
       users: []
       , things: []
     }
-    @allowances = {}
-    @karma_allowance = 10
+    @khistory = []
 
     @increment_responses = [
-      "+1!", "killin' it!", "is en fuego!", "leveled up!"
+      "FTW!", "killin' it!", "is en fuego!", "leveled up!", "ROCK-N-ROLL!"
     ]
 
     @robot.brain.on 'loaded', =>
       if @robot.brain.data.karma
         @cache = @robot.brain.data.karma
-      if @robot.brain.data.karmaAllowances
-        @allowances = @robot.brain.data.karmaAllowances
+      if @robot.brain.data.karmaHistory
+        @khistory = @robot.brain.data.karmaHistory
       @karma_allowance ?= process.env.KARMA_ALLOWANCE
 
   kill: (thing) ->
@@ -48,20 +47,59 @@ class Karma
       delete @cache.things[thing]
     @robot.brain.data.karma = @cache
 
+  cleanKarmaHistory: (actor) ->
+    if @khistory[actor.id]?
+      DAY = 1000 * 60 * 60  * 24
+      today = new Date()
+      @khistory[actor.id] = (x for x in @khistory[actor.id] when (Math.round((today.getTime() - x) / DAY)) <= 7 )
+
+  getKarmaHistory: (actor) ->
+    if @khistory[actor.id]?
+      DAY = 1000 * 60 * 60  * 24
+      today = new Date()
+      todayKarma = (x for x in @khistory[actor.id] when (Math.round((today.getTime() - x) / DAY)) == 0 )
+      yesterdayKarma = (x for x in @khistory[actor.id] when (Math.round((today.getTime() - x) / DAY)) == 1 )
+      return @khistory[actor.id].length + (yesterdayKarma.length*2) + (todayKarma.length*3)
+    else 
+      return 0
+
+  getKarmaHistoryList: (actor) ->
+    if @khistory[actor.id]?
+      return @khistory[actor.id].join()
+    else 
+      return 'none'
+
+  addKarmaHistory: (actor) ->
+    if not @khistory[actor.id]?
+      @khistory[actor.id] = []
+    today = new Date  
+    @khistory[actor.id].push today.getTime()
+    @robot.brain.data.karmaHistory = @khistory
+      
+  getKarmaPower: (actor) ->
+    maxKarmaPower = 3
+    minKarmaPower = 0.01
+    c1 = -0.5
+    c2 = 3
+    c3 = 0.008
+    kv = @getKarmaHistory(actor)
+    return Math.max(minKarmaPower,Math.min(maxKarmaPower,(c1 * Math.log(kv)) + c2 - (kv*c3)))
+    
   increment: (thing, actor) ->
-    @allowances[actor.id] -= 1 if actor.id?
+    @cleanKarmaHistory(actor)
+    kPower = @getKarmaPower(actor)
+    @addKarmaHistory(actor)
     thingObj = @robot.brain.userForName(thing)
     if thingObj?
       @cache.users[thingObj.id] ?= 0
-      @cache.users[thingObj.id] += 1
+      @cache.users[thingObj.id] += kPower
     else
       @cache.things[thing] ?= 0
-      @cache.things[thing] += 1
+      @cache.things[thing] += kPower
     @robot.brain.data.karma = @cache
-    @robot.brain.data.karmaAllowances = @allowances
+    return kPower
 
   decrement: (thing, actor) ->
-    @allowances[actor.id] -= 1;
     @cache.users[actor.id] -= 2
     thingObj = @robot.brain.userForName(thing)
     if thingObj?
@@ -71,22 +109,9 @@ class Karma
       @cache.things[thing] ?= 0
       @cache.things[thing] -= 1
     @robot.brain.data.karma = @cache
-    @robot.brain.data.karmaAllowances = @allowances
 
   incrementResponse: ->
     @increment_responses[Math.floor(Math.random() * @increment_responses.length)]
-
-  getAllowance: (user) ->
-    if not @allowances[user.id]? then @allowances[user.id] = @karma_allowance
-    return @allowances[user.id]
-
-  clearAllowances: ->
-    @allowances = {}
-    @robot.brain.data.karmaAllowances = {}
-
-  clearSingleAllowance: (user, karma) ->
-    @cache.users[user.id] -= karma
-    @allowances[user.id] += karma
 
   selfDeniedResponses: (name) ->
     @self_denied_responses = [
@@ -141,29 +166,23 @@ class Karma
 module.exports = (robot) ->
   karma = new Karma robot
   robot.karma = karma
-  cronJob = require('cron').CronJob
-  new cronJob('0 01 01 * * *', karma.clearAllowances, null, true, 'America/Chicago', karma)
   allow_self = process.env.KARMA_ALLOW_SELF or "true"
 
   robot.hear /([\w\d\.\-\_\:]+)\+\+/, (msg) ->
     subject = msg.match[1].toLowerCase().replace /^@+/, ""
     user = msg.message.user
-    if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject)
-      karma.increment subject, user
-      msg.send "#{subject} #{karma.incrementResponse()} (Karma: #{karma.get(subject)})"
-    else if (karma.getAllowance(user) == 0)
-      msg.send "#{user.name} isn't allowed to karma any more today!"
+    if (allow_self is true or user.name.toLowerCase() != subject)
+      powerOutput = karma.increment subject, user
+      msg.send "#{subject} +#{Math.round(powerOutput*100)/100} #{karma.incrementResponse()} (Karma: #{Math.round(karma.get(subject)*100)/100})"
     else
       msg.send msg.random karma.selfDeniedResponses(user.name)
 
   robot.hear /([\w\d\.\-\_\:]+)--/, (msg) ->
     subject = msg.match[1].toLowerCase().replace /^@+/, ""
     user = msg.message.user
-    if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject) and (karma.get(user.name) >= 2)
+    if (allow_self is true or user.name.toLowerCase() != subject) and (karma.get(user.name) >= 2)
       karma.decrement subject, user
       msg.send msg.random karma.decrementResponses(user.name, subject, karma.get(user.name), karma.get(subject))
-    else if (karma.getAllowance(user) == 0)
-      msg.send "#{user.name} isn't allowed to karma any more today!"
     else if (karma.get(user.name) < 2)
       msg.send msg.random karma.shortOnKarmaResponses(user.name)
     else
@@ -179,17 +198,8 @@ module.exports = (robot) ->
     else
       msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
 
-  robot.respond /karma give allowance$/i, (msg) ->
-    if not robot.auth.hasRole(msg.message.user,'admin')
-      msg.send "I can't let you do that..."
-    else 
-      karma.allowances = {}
-      msg.send "All right... everyone can play again..."
-
-  robot.respond /karma show allowance$/i, (msg) ->
-    for item, value of karma.allowances
-      user = robot.brain.userForId(item)
-      msg.send "#{user?.name}: #{value}"
+  robot.respond /karma history$/i, (msg) ->
+    msg.send "Recent karma: #{karma.getKarmaHistoryList(msg.message.user)}"
 
   robot.respond /karma best$/i, (msg) ->
     if karma.top().length > 0
@@ -204,15 +214,6 @@ module.exports = (robot) ->
       for item, rank in karma.bottom()
         verbiage.push "#{rank + 1}. #{item.name}: #{item.karma}"
       msg.send verbiage.join("\n")
-
-  robot.respond /buy (\d+) karma$/i, (msg) ->
-    user = msg.message.user
-    request = parseInt msg.match[1]
-    if request <= karma.get(user.name) and request > 0 and karma.getAllowance(user) == 0
-      karma.clearSingleAllowance(user, request)
-      msg.send "Congrats on your purchase, #{user.name}. Sucker."
-    else
-      msg.send "Sorry #{user.name}, your fingers are writing checks other parts of you can't cash."
 
   robot.respond /karma ([\w\d\.\-\_\:]+)$/i, (msg) ->
     match = msg.match[1].toLowerCase().replace /^@+/, ""
