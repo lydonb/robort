@@ -10,7 +10,7 @@
 #   lydonb
 
 module.exports = (robot) ->
-  robot.hear /\:cpeck\:/i, (msg) ->
+  robot.hear /\:.*?cpeck.*?\:/i, (msg) ->
       msg.send "Shhhh... The boss is coming!"
   robot.hear /game of thrones/i, (msg) ->
     msg.send "No Spoilers!!"

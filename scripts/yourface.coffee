@@ -3,20 +3,20 @@
 #
 # Configuration:
 #   HUBOT_YOURFACE_PERCENT (optional)
-#		Percent chance that hubot will repond with a "Your face". Default is 40%
+#     Percent chance that hubot will repond with a "Your face". Default is 40%
 #
 # Notes:
-#   <optional notes required for the script>
+#   
 #
 # Author:
 #   Joe Bott
 
 module.exports = (robot) ->
 
-  percent = process.env.HUBOT_YOURFACE_PERCENT or 3
-
+  percent = process.env.HUBOT_YOURFACE_PERCENT or 100
   lastYourFace = {}
-  robot.hear /^([ \w]*) (is|was) (.+)$/, (message) ->
+
+  robot.hear /^([\sa-zA-Z0-9]*) (is|was) (.+)$/, (message) ->
     lower = message.match[1].toLowerCase()
     if lower.indexOf("your face") < 0 and lower.indexOf("how") < 0 and lower.indexOf("why") < 0 and lower.indexOf("wtf") < 0 and lower.indexOf("when") < 0 and lower.indexOf("where") < 0
       if Math.random() <= (percent / 100.0)
