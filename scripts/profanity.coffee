@@ -18,7 +18,7 @@
 #karma = require './karma'
 
 punish = (robot, msg, swearJar, punisher, count) ->
-  responses = (robot.karma.increment swearJar, punisher for [1..count])
+  responses = (robot.karma.increment swearJar, punisher, 'profanity' for [1..count])
   msg.send "@#{punisher} added #{responses.length} #{if responses.length > 1 then 'points' else 'point'} to #{swearJar}! (Total: #{robot.karma.get(swearJar)})"
 
 module.exports = (robot) ->

@@ -83,13 +83,13 @@ class Karma
     kv = @getKarmaHistoryValue(actorId)
     return Math.round(Math.max(min_power,Math.min(max_power,(c1 * Math.log(kv)) + c2 - (kv*c3))) * 100) / 100
     
-  increment: (thing, actor) ->
+  increment: (thing, actor, source) ->
     actorName = @getNameFromId(actor.id)
-    user = @robot.brain.data.users[thing]
+    user = @robot.brain.data.users[thing] or []
     return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
     return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self is false and actor.id == user.id    
  
-    if thing.toLowerCase() == "swearjar"
+    if thing.toLowerCase() == "swearjar" && source.toLowerCase() == "profanity"
       @karma.things[thing] ?= 0
       @karma.things[thing] = @computeFloats(@karma.things[thing], 1, "+")
       @robot.brain.data.karma = @karma
@@ -107,7 +107,7 @@ class Karma
       thingName = "@#{@getNameFromId(thing)}"
     else
       @karma.things[thing] ?= 0
-      @karma.things[thing] = @computeFloats(@karma.things[thing], kPower, "-")
+      @karma.things[thing] = @computeFloats(@karma.things[thing], kPower, "+")
       thingName = thing
     @addKarmaHistory(actor.id)
     @robot.brain.data.karma = @karma
@@ -117,7 +117,7 @@ class Karma
     return "Looks like @#{thing} is a user. Try adding a \"@\" before it to properly modify karma." if @isFoundIn(thing, @displayNames())
     actorKarma = @get(actor.id)
     actorName = @getNameFromId(actor.id)
-    user = @robot.brain.data.users[thing]
+    user = @robot.brain.data.users[thing] or []
     return @getResponse(@shortOnKarmaResponses("@#{actorName}")) if actorKarma < 2
     return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self is false and actor.id == user.id    
     @karma.users[actor.id] = @computeFloats(@karma.users[actor.id], 2, "-")
@@ -227,13 +227,13 @@ module.exports = (robot) ->
   robot.karma = karma
   subjectString = "([\\w\\d\\[\\]\\-\\_\\{\\}\\,\\.\\/\\;\\(\\)\\'\\:]+?)"
 
-  robot.hear new RegExp("#{subjectString}(\\+\\+|\\-\\-)", "g"), (msg) ->
+  robot.hear new RegExp("#{subjectString}\\s*?(\\+\\+|\\-\\-)", "g"), (msg) ->
     if (msg.message.user.id.trim().substr(0,1).toLowerCase() == "u")
       responses = []
-      increments = msg.message.rawText.replace(/[\<\>]/g, "").match(/[^\s\@]+\+\+(?!\:)/g) ? []
-      responses.push (karma.increment subject.replace(/([^\s\@]+)(\+\+)/g, '$1'), msg.message.user) for subject, i in increments when i < 10 
-      decrements = msg.message.rawText.replace(/[\<\>]/g, "").match(/[^\s\@]+\-\-(?!\:)/g) ? []
-      responses.push (karma.decrement subject.replace(/([^\s\@]+)(\-\-)/g, '$1'), msg.message.user) for subject, i in decrements when i < 10
+      increments = msg.message.rawText.replace(/[\<\>]/g, "").match(/[^\s\@]+\s*?\+\+(?!\:)/g) ? []
+      responses.push (karma.increment subject.replace(/([^\s\@]+)\s*?(\+\+)/g, '$1'), msg.message.user, 'user') for subject, i in increments when i < 10 
+      decrements = msg.message.rawText.replace(/[\<\>]/g, "").match(/[^\s\@]+\s*?\-\-(?!\:)/g) ? []
+      responses.push (karma.decrement subject.replace(/([^\s\@]+)\s*?(\-\-)/g, '$1'), msg.message.user) for subject, i in decrements when i < 10
       msg.send responses.join("\n")
 
   robot.respond new RegExp("karma empty \@?#{subjectString}$", "i"), (msg) ->

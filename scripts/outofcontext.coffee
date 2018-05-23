@@ -34,7 +34,7 @@ listQuotes = (data, msg, user) ->
   quotes = data[user.id] or= []
   quoteMsg = ""
   if quotes.length > 0
-    msg.send "#{user.name} has said..."
+    quoteMsg += "#{user.name} has said...\n"
     quoteMsg += "\"#{quote}\"\n" for quote in quotes
     msg.send "#{quoteMsg}"
   else
