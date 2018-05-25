@@ -19,177 +19,237 @@
 # Author:
 #   stuartf
 
+allow_self = process.env.KARMA_ALLOW_SELF or true
+daysWatched = process.env.KARMA_DAYS_WATCHED or 14
+max_power = process.env.KARMA_MAX_POWER or 3
+min_power = process.env.KARMA_MIN_POWER or 0.01
+milliseconds = 1000 * 60 * 60 * 24
+
 class Karma
 
   constructor: (@robot) ->
-    @cache = {
+    @karma = {
       users: []
       , things: []
     }
-    @allowances = {}
-    @karma_allowance = 10
-
-    @increment_responses = [
-      "+1!", "killin' it!", "is en fuego!", "leveled up!"
-    ]
+    @khistory = []
 
     @robot.brain.on 'loaded', =>
       if @robot.brain.data.karma
-        @cache = @robot.brain.data.karma
-      if @robot.brain.data.karmaAllowances
-        @allowances = @robot.brain.data.karmaAllowances
-      @karma_allowance ?= process.env.KARMA_ALLOWANCE
+        @karma = @robot.brain.data.karma
+      if @robot.brain.data.karmaHistory
+        @khistory = @robot.brain.data.karmaHistory
 
-  kill: (thing) ->
-    thingObj = @robot.brain.userForName(thing)
-    if thingObj?
-      delete @cache.users[thingObj.id]
+  clearKarma: (thing) ->
+    thingObj = @robot.brain.userForId(thing)
+    if thingObj.slack?
+      delete @karma.users[thingObj.id]
     else
-      delete @cache.things[thing]
-    @robot.brain.data.karma = @cache
+      delete @karma.things[thing]
+    @robot.brain.data.karma = @karma
 
-  increment: (thing, actor) ->
-    @allowances[actor.id] -= 1 if actor.id?
-    thingObj = @robot.brain.userForName(thing)
-    if thingObj?
-      @cache.users[thingObj.id] ?= 0
-      @cache.users[thingObj.id] += 1
+  clearHistory: (thing) ->
+    thingObj = @robot.brain.userForId(thing)
+    delete @khistory[thingObj.id] if thingObj.slack?
+    @robot.brain.data.karmaHistory = @khistory
+
+  cleanKarmaHistory: (actorId) ->
+    if @khistory[actorId]?
+      today = new Date()
+      @khistory[actorId] = (x for x in @khistory[actorId] when (Math.round((today.getTime() - x) / milliseconds)) <= daysWatched)
+
+  getKarmaHistoryValue: (actorId) ->
+    if @khistory[actorId]?
+      today = new Date()
+      todayKarma = (x for x in @khistory[actorId] when (Math.round((today.getTime() - x) / milliseconds)) == 0 )
+      yesterdayKarma = (x for x in @khistory[actorId] when (Math.round((today.getTime() - x) / milliseconds)) == 1 )
+      @khistory[actorId].length + (yesterdayKarma.length*2) + (todayKarma.length*3)
+    else 
+      0
+
+  getKarmaHistoryList: (actorId) ->
+    @khistory[actorId] ? []
+
+  addKarmaHistory: (actorId) ->
+    @khistory[actorId] ?= []
+    today = new Date  
+    @khistory[actorId].push today.getTime()
+    @robot.brain.data.karmaHistory = @khistory
+      
+  getKarmaPower: (actorId) ->
+    c1 = -0.5
+    c2 = 3
+    c3 = 0.008
+    kv = @getKarmaHistoryValue(actorId)
+    return Math.round(Math.max(min_power,Math.min(max_power,(c1 * Math.log(kv)) + c2 - (kv*c3))) * 100) / 100
+    
+  increment: (thing, actor, source) ->
+    actorName = @getNameFromId(actor.id)
+    user = @robot.brain.data.users[thing] or []
+    return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
+    return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self is false and actor.id == user.id    
+ 
+    if thing.toLowerCase() == "swearjar" && source.toLowerCase() == "profanity"
+      @karma.things[thing] ?= 0
+      @karma.things[thing] = @computeFloats(@karma.things[thing], 1, "+")
+      @robot.brain.data.karma = @karma
+      return
+
+    return "Looks like @#{thing} is a user. Try adding a \"@\" before it to properly modify karma." if @isFoundIn(thing, @displayNames())
+    @cleanKarmaHistory(actor.id)
+    actorKarmas = @getKarmaHistoryList(actor.id).sort().reverse()
+    lastKarma = actorKarmas.slice(0, 1).pop() ? 0
+    return "Try again later (after #{@timestampToDateTime(lastKarma + (milliseconds * daysWatched))}) @#{@actorName} - You've been a little overzealous in giving away karma lately." if actorKarmas.length >= daysWatched * 30
+    kPower = @getKarmaPower(actor.id)
+    if user.slack?
+      @karma.users[thing] ?= 0
+      @karma.users[thing] = @computeFloats(@karma.users[thing], kPower, "+")
+      thingName = "@#{@getNameFromId(thing)}"
     else
-      @cache.things[thing] ?= 0
-      @cache.things[thing] += 1
-    @robot.brain.data.karma = @cache
-    @robot.brain.data.karmaAllowances = @allowances
+      @karma.things[thing] ?= 0
+      @karma.things[thing] = @computeFloats(@karma.things[thing], kPower, "+")
+      thingName = thing
+    @addKarmaHistory(actor.id)
+    @robot.brain.data.karma = @karma
+    "#{thingName} +#{kPower} #{@getResponse(@incrementResponses())} (Karma: #{@get(thing)})"
 
   decrement: (thing, actor) ->
-    @allowances[actor.id] -= 1;
-    @cache.users[actor.id] -= 2
-    thingObj = @robot.brain.userForName(thing)
-    if thingObj?
-      @cache.users[thingObj.id] ?= 0
-      @cache.users[thingObj.id] -= 1
+    return "Looks like @#{thing} is a user. Try adding a \"@\" before it to properly modify karma." if @isFoundIn(thing, @displayNames())
+    actorKarma = @get(actor.id)
+    actorName = @getNameFromId(actor.id)
+    user = @robot.brain.data.users[thing] or []
+    return @getResponse(@shortOnKarmaResponses("@#{actorName}")) if actorKarma < 2
+    return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self is false and actor.id == user.id    
+    @karma.users[actor.id] = @computeFloats(@karma.users[actor.id], 2, "-")
+    if user.slack?
+      @karma.users[thing] ?= 0
+      @karma.users[thing] = @computeFloats(@karma.users[thing], 1, "-")
+      thingName = "@#{@getNameFromId(thing)}"
     else
-      @cache.things[thing] ?= 0
-      @cache.things[thing] -= 1
-    @robot.brain.data.karma = @cache
-    @robot.brain.data.karmaAllowances = @allowances
+      @karma.things[thing] ?= 0
+      @karma.things[thing] = @computeFloats(@karma.things[thing], 1, "-")
+      thingName = thing
+    @robot.brain.data.karma = @karma
+    @getResponse(@decrementResponses(actorName, thingName, @get(actor.id), @get(thing)))
 
-  incrementResponse: ->
-    @increment_responses[Math.floor(Math.random() * @increment_responses.length)]
+  getResponse: (responses) ->
+    return responses[Math.floor(Math.random() * responses.length)]
 
-  getAllowance: (user) ->
-    if not @allowances[user.id]? then @allowances[user.id] = @karma_allowance
-    return @allowances[user.id]
-
-  clearAllowances: ->
-    @allowances = {}
-    @robot.brain.data.karmaAllowances = {}
-
-  clearSingleAllowance: (user, karma) ->
-    @cache.users[user.id] -= karma
-    @allowances[user.id] += karma
+  incrementResponses: -> 
+    @increment_responses = [
+      "FTW!"
+      , "killin' it!"
+      , "is en fuego!"
+      , "leveled up!"
+      , "ROCK-N-ROLL!"
+      , "gained a point!"
+    ]
 
   selfDeniedResponses: (name) ->
     @self_denied_responses = [
-      "Hey everyone! #{name} is a narcissist!",
-      "I might just allow that next time, but no.",
-      "I can't do that #{name}.",
-      "Shut it down, #{name}"
+      "Hey everyone! #{name} is a narcissist!"
+      , "I might just allow that next time, but no."
+      , "#{name}, I can't do that."
+      , "That's a funny one, #{name}. But seriously, stop trying."
+      , "Why you tryin' to cheat the system, #{name}?"
+      , "No."
+      , "Definitely not."
+      , "Not in a million years."
+      , "*sigh* #{name} again? You should have learned the rules by now!"
     ]
 
   shortOnKarmaResponses: (name) ->
     @short_on_karma_responses = [
-      "#{name}: Get your own karma first, you slacker!",
-      "To be the man, you've gotta beat the man, #{name}.",
-      "You require more vespene gas, #{name}."
+      "#{name}: Get your own karma first, you slacker!"
+      , "#{name} - To be the man, you've gotta beat the man."
+      , "You require more vespene gas."
+      , "#{name}'s mouth is writing checks their karma can't cash."
+      , "Please acquire more resources to complete this action."
+      , "You ain't got the cheese for a request like that."
+      , "#{name}! If I've told you once, I've told you a thousand times..."
+      , "You're trying to cheat, #{name}? Not in my house."
     ]
 
-  decrementResponses: (name, thing, nKarma, sKarma) ->
+  decrementResponses: (name, thing, nKarma, tKarma) ->
     @decrement_responses = [
-      "#{thing}(#{sKarma}) took a hit from #{name}(#{nKarma})! Ouch.",
-      "#{thing}(#{sKarma}) got punked by #{name}(#{nKarma}).",
-      "#{name}(#{nKarma}) took out a hit on #{thing}(#{sKarma}).",
-      "#{name}(#{nKarma}) sabotaged #{thing}(#{sKarma}).",
-      "#{thing}(#{sKarma}) lost a level because of #{name}(#{nKarma}).",
-      "#{thing}(#{sKarma}) - ya burnt. #{name}(#{nKarma}) - ya burnter."
+      "#{thing}(#{tKarma}) took a hit from @#{name}(#{nKarma})! Ouch."
+      , "#{thing}(#{tKarma}) got punked by @#{name}(#{nKarma})."
+      , "@#{name}(#{nKarma}) took out a hit on #{thing}(#{tKarma})."
+      , "@#{name}(#{nKarma}) sabotaged #{thing}(#{tKarma})."
+      , "#{thing}(#{tKarma}) lost a level because of @#{name}(#{nKarma})."
+      , "#{thing}(#{tKarma}) - ya burnt. @#{name}(#{nKarma}) - ya burnter."
     ]
 
   get: (thing) ->
-    thingObj = @robot.brain.userForName(thing)
-    if thingObj?
-        k = if @cache.users[thingObj.id]? then @cache.users[thingObj.id] else 0
+    user = @robot.brain.data.users[thing]
+    if user?.slack?
+      k = if @karma.users[thing]? then @karma.users[thing] else 0
     else
-        k = if @cache.things[thing]? then @cache.things[thing] else 0
-    return k
+      k = if @karma.things[thing]? then @karma.things[thing] else 0
+    k
 
   sort: ->
     s = []
-    for key, val of @cache.users
-      user = @robot.brain.userForId(key)
-      s.push({ name: user?.name, karma: val })
-    for key, val of @cache.things
-      s.push({ name: key, karma: val })
+    s.push ({ name: "@#{@getNameFromId(key)}", karma: val }) for key, val of @karma.users
+    s.push ({ name: key, karma: val }) for key, val of @karma.things
     s.sort (a, b) -> b.karma - a.karma
 
   top: (n = 5) ->
-    sorted = @sort()
-    sorted.slice(0, n)
+    @sort().slice(0, n)
 
   bottom: (n = 5) ->
-    sorted = @sort()
-    sorted.slice(-n).reverse()
+    @sort().slice(-n).reverse()
+
+  displayNames: ->
+    userNames = []
+    userNames.push (if user?.slack?.profile?.display_name != "" then user?.slack?.profile?.display_name else user?.slack?.profile?.real_name) for key, user of @robot.brain.users() when user?.slack?.deleted is false
+    userNames
+
+  getNameFromId: (userId) ->
+    (if user?.slack?.profile?.display_name != "" then user?.slack?.profile?.display_name else user?.slack?.profile?.real_name) for key, user of @robot.brain.users() when user?.slack?.deleted is false and user?.id == userId
+
+  isFoundIn: (search, array) ->
+    array.indexOf(search) isnt -1
+
+  timestampToDateTime: (timestamp) ->
+    date = new Date(timestamp)
+    date.toLocaleDateString('en-US', {timeZone: 'America/Chicago'}) + ' @ ' + date.toLocaleTimeString('en-US', {timeZone: 'America/Chicago'})
+
+  computeFloats: (input1, input2, operator) ->
+    switch operator
+      when "+" then Math.round(input1 * 100 + input2 * 100) / 100
+      when "-" then Math.round(input1 * 100 - input2 * 100) / 100
+      when "*" then Math.round(input1 * 100 * input2 * 100) / 100
+      when "/" then Math.round(input1 * 100 / input2 * 100) / 100
 
 module.exports = (robot) ->
   karma = new Karma robot
   robot.karma = karma
-  cronJob = require('cron').CronJob
-  new cronJob('0 01 01 * * *', karma.clearAllowances, null, true, 'America/Chicago', karma)
-  allow_self = process.env.KARMA_ALLOW_SELF or "true"
+  subjectString = "([\\w\\d\\[\\]\\-\\_\\{\\}\\,\\.\\/\\;\\(\\)\\'\\:]+?)"
 
-  robot.hear /([\w\d\.\-\_\:]+)\+\+/, (msg) ->
-    subject = msg.match[1].toLowerCase().replace /^@+/, ""
-    user = msg.message.user
-    if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject)
-      karma.increment subject, user
-      msg.send "#{subject} #{karma.incrementResponse()} (Karma: #{karma.get(subject)})"
-    else if (karma.getAllowance(user) == 0)
-      msg.send "#{user.name} isn't allowed to karma any more today!"
-    else
-      msg.send msg.random karma.selfDeniedResponses(user.name)
+  robot.hear new RegExp("#{subjectString}\\s*?(\\+\\+|\\-\\-)", "g"), (msg) ->
+    if (msg.message.user.id.trim().substr(0,1).toLowerCase() == "u")
+      responses = []
+      increments = msg.message.rawText.replace(/[\<\>]/g, "").match(/[^\s\@]+\s*?\+\+(?!\:)/g) ? []
+      responses.push (karma.increment subject.replace(/([^\s\@]+)\s*?(\+\+)/g, '$1'), msg.message.user, 'user') for subject, i in increments when i < 10 
+      decrements = msg.message.rawText.replace(/[\<\>]/g, "").match(/[^\s\@]+\s*?\-\-(?!\:)/g) ? []
+      responses.push (karma.decrement subject.replace(/([^\s\@]+)\s*?(\-\-)/g, '$1'), msg.message.user) for subject, i in decrements when i < 10
+      msg.send responses.join("\n")
 
-  robot.hear /([\w\d\.\-\_\:]+)--/, (msg) ->
-    subject = msg.match[1].toLowerCase().replace /^@+/, ""
-    user = msg.message.user
-    if (karma.getAllowance(user) > 0) and (allow_self is true or user.name.toLowerCase() != subject) and (karma.get(user.name) >= 2)
-      karma.decrement subject, user
-      msg.send msg.random karma.decrementResponses(user.name, subject, karma.get(user.name), karma.get(subject))
-    else if (karma.getAllowance(user) == 0)
-      msg.send "#{user.name} isn't allowed to karma any more today!"
-    else if (karma.get(user.name) < 2)
-      msg.send msg.random karma.shortOnKarmaResponses(user.name)
-    else
-      msg.send msg.random karma.selfDeniedResponses(user.name)
-
-  robot.respond /karma empty ([\w\d\.\-\_\:]+)$/i, (msg) ->
-    subject = msg.match[1].toLowerCase().replace /^@+/, ""
-    if not robot.auth.hasRole(msg.message.user,'admin')
+  robot.respond new RegExp("karma empty \@?#{subjectString}$", "i"), (msg) ->
+    match = msg.message.rawText.match(/\s([^\s]+?)$/)
+    subject = match[1].replace(/[\<\>\@]/g, "")
+    if match[1] == subject and karma.isFoundIn(subject, karma.displayNames())
+      msg.send "Looks like @#{subject} is a user. Try adding a \"@\" before it to properly modify karma."
+    else if not robot.auth.hasRole(msg.message.user,'admin')
       msg.send "I can't let you do that..."
-    else if allow_self is true or msg.message.user.name.toLowerCase() != subject
+    else
       karma.kill subject
-      msg.send "#{subject} has had its karma scattered to the winds."
-    else
-      msg.send msg.random karma.selfDeniedResponses(msg.message.user.name)
-
-  robot.respond /karma give allowance$/i, (msg) ->
-    if not robot.auth.hasRole(msg.message.user,'admin')
-      msg.send "I can't let you do that..."
-    else 
-      karma.allowances = {}
-      msg.send "All right... everyone can play again..."
-
-  robot.respond /karma show allowance$/i, (msg) ->
-    for item, value of karma.allowances
-      user = robot.brain.userForId(item)
-      msg.send "#{user?.name}: #{value}"
+      msg.send "{if match[1] == subject then subject else '@' + karma.getName(subject)} has had its karma scattered to the winds."
+  
+  #This command should respond with a user-readable format of previous karmas
+  #robot.respond /karma history$/i, (msg) ->
+  #  msg.send "Recent karma: #{karma.getKarmaHistoryList(msg.message.user)}"
 
   robot.respond /karma best$/i, (msg) ->
     if karma.top().length > 0
@@ -205,16 +265,10 @@ module.exports = (robot) ->
         verbiage.push "#{rank + 1}. #{item.name}: #{item.karma}"
       msg.send verbiage.join("\n")
 
-  robot.respond /buy (\d+) karma$/i, (msg) ->
-    user = msg.message.user
-    request = parseInt msg.match[1]
-    if request <= karma.get(user.name) and request > 0 and karma.getAllowance(user) == 0
-      karma.clearSingleAllowance(user, request)
-      msg.send "Congrats on your purchase, #{user.name}. Sucker."
-    else
-      msg.send "Sorry #{user.name}, your fingers are writing checks other parts of you can't cash."
-
-  robot.respond /karma ([\w\d\.\-\_\:]+)$/i, (msg) ->
-    match = msg.match[1].toLowerCase().replace /^@+/, ""
-    if match != "best" && match != "worst"
-      msg.send "\"#{match}\" has #{karma.get(match)} karma."
+  robot.respond new RegExp("karma \@?#{subjectString}$", "i"), (msg) ->
+    match = msg.message.rawText.match(/\s([^\s]+?)$/)
+    subject = match[1].replace(/[\<\>\@]/g, "")
+    if match[1] == subject and karma.isFoundIn(subject, karma.displayNames())
+      msg.send "Looks like @#{subject} is a user. Try adding a \"@\" before it to properly allocate the karma."
+    else if subject not in ["best", "worst", "history"]
+      msg.send "\"#{if match[1] == subject then subject else '@' + karma.getName(subject)}\" has #{karma.get(subject)} karma."

@@ -7,4 +7,3 @@ module.exports = (robot) ->
     exchange.publish msg.message
   robot.hear /.*/, f
   robot.react f
-
