@@ -271,4 +271,4 @@ module.exports = (robot) ->
     if match[1] == subject and karma.isFoundIn(subject, karma.displayNames())
       msg.send "Looks like @#{subject} is a user. Try adding a \"@\" before it to properly allocate the karma."
     else if subject not in ["best", "worst", "history"]
-      msg.send "\"#{if match[1] == subject then subject else '@' + karma.getName(subject)}\" has #{karma.get(subject)} karma."
+      msg.send "\"#{if match[1] == subject then subject else '@' + karma.getNameFromId(subject)}\" has #{karma.get(subject)} karma."
