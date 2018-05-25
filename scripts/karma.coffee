@@ -19,7 +19,7 @@
 # Author:
 #   stuartf
 
-allow_self = process.env.KARMA_ALLOW_SELF or true
+allow_self = process.env.KARMA_ALLOW_SELF or "false"
 daysWatched = process.env.KARMA_DAYS_WATCHED or 14
 max_power = process.env.KARMA_MAX_POWER or 3
 min_power = process.env.KARMA_MIN_POWER or 0.01
@@ -87,7 +87,7 @@ class Karma
     actorName = @getNameFromId(actor.id)
     user = @robot.brain.data.users[thing] or []
     return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
-    return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self is false and actor.id == user.id    
+    return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self.toLowerCase() == 'false' and actor.id == user.id    
  
     if thing.toLowerCase() == "swearjar" && source.toLowerCase() == "profanity"
       @karma.things[thing] ?= 0
