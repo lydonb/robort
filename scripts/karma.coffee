@@ -89,7 +89,7 @@ class Karma
     return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
     return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self.toLowerCase() == 'false' and actor.id == user.id    
  
-    if thing.toLowerCase() == "swearjar" && source.toLowerCase() == "profanity"
+    if thing.toLowerCase() == "swearjar" and source.toLowerCase() == "profanity"
       @karma.things[thing] ?= 0
       @karma.things[thing] = @computeFloats(@karma.things[thing], 1, "+")
       @robot.brain.data.karma = @karma
