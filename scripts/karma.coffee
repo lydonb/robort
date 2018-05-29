@@ -86,12 +86,16 @@ class Karma
   increment: (thing, actor, source) ->
     actorName = @getNameFromId(actor.id)
     user = @robot.brain.data.users[thing] or []
+    @robot.logger.info thing
+    @robot.logger.info source
     return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
     return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self.toLowerCase() == 'false' and actor.id == user.id    
  
     if thing.toLowerCase() == "swearjar" and source.toLowerCase() == "profanity"
+      @robot.logger.info "Got inside"
       @karma.things[thing] ?= 0
       @karma.things[thing] = @computeFloats(@karma.things[thing], 1, "+")
+      @robot.logger.info @karma.things[thing]
       @robot.brain.data.karma = @karma
       return
 
