@@ -88,6 +88,9 @@ class Karma
     user = @robot.brain.data.users[thing] or []
     @robot.logger.info thing
     @robot.logger.info source
+    @robot.logger.info actor.id
+    @robot.logger.info user.id
+    @robot.logger.info allow_self.toLowerCase()
     return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
     return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self.toLowerCase() == 'false' and actor.id == user.id    
  
