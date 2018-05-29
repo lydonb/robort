@@ -86,23 +86,17 @@ class Karma
   increment: (thing, actor, source) ->
     actorName = @getNameFromId(actor.id)
     user = @robot.brain.data.users[thing] or []
-    @robot.logger.info thing
-    @robot.logger.info source
-    @robot.logger.info actor.id
-    @robot.logger.info user.id
-    @robot.logger.info allow_self.toLowerCase()
-    return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
-    return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self.toLowerCase() == 'false' and actor.id == user.id    
  
     if thing.toLowerCase() == "swearjar" and source.toLowerCase() == "profanity"
-      @robot.logger.info "Got inside"
       @karma.things[thing] ?= 0
       @karma.things[thing] = @computeFloats(@karma.things[thing], 1, "+")
-      @robot.logger.info @karma.things[thing]
       @robot.brain.data.karma = @karma
       return
 
+    return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
+    return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self.toLowerCase() == 'false' and actor.id == user.id    
     return "Looks like @#{thing} is a user. Try adding a \"@\" before it to properly modify karma." if @isFoundIn(thing, @displayNames())
+
     @cleanKarmaHistory(actor.id)
     actorKarmas = @getKarmaHistoryList(actor.id).sort().reverse()
     lastKarma = actorKarmas.slice(0, 1).pop() ? 0
