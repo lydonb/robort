@@ -86,8 +86,6 @@ class Karma
   increment: (thing, actor, source) ->
     actorName = @getNameFromId(actor.id)
     user = @robot.brain.data.users[thing] or []
-    return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
-    return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self.toLowerCase() == 'false' and actor.id == user.id    
  
     if thing.toLowerCase() == "swearjar" && source.toLowerCase() == "profanity"
       @karma.things[thing] ?= 0
@@ -95,6 +93,8 @@ class Karma
       @robot.brain.data.karma = @karma
       return
 
+    return "I'm going to assume you didn't mean a person named #{thing}." if thing.toLowerCase() in ["c", "notepad"]
+    return @getResponse(@selfDeniedResponses("@#{actorName}")) if allow_self.toLowerCase() == 'false' and actor.id == user.id    
     return "Looks like @#{thing} is a user. Try adding a \"@\" before it to properly modify karma." if @isFoundIn(thing, @displayNames())
     @cleanKarmaHistory(actor.id)
     actorKarmas = @getKarmaHistoryList(actor.id).sort().reverse()
